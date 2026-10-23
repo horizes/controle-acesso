@@ -11,6 +11,7 @@ secrets/
 *.sqlite*
 *.private.json
 *.private.conf
+*.private.yaml
 *.key
 *.pem
 gateway/.env
