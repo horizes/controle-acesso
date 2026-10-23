@@ -7,6 +7,7 @@ export type AccessSession = {
   unit?: string;
   expiresAt: number;
   mode: 'demo' | 'api';
+  capabilities?:{admin:boolean;manualRelease:boolean};
 };
 
 // These public accounts are presentation fixtures, never production credentials.

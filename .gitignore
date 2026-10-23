@@ -2,4 +2,15 @@ node_modules/
 .checks/
 *.log
 .env*
+!**/.env.example
 .DS_Store
+.deploy/
+data/
+private/
+secrets/
+*.sqlite*
+*.private.json
+*.private.conf
+*.key
+*.pem
+gateway/.env

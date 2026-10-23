@@ -1,10 +1,10 @@
 import type {AccessRole, AccessSession} from './access-session';
 import {DemoState, isDemoState} from './demo-model';
 
-export type RuntimeConfig = {apiBaseUrl?:string; requestTimeoutMs?:number; refreshIntervalMs?:number};
+export type RuntimeConfig = {apiBaseUrl?:string; operationalApiBaseUrl?:string; requestTimeoutMs?:number; refreshIntervalMs?:number};
 export type ApiCommand = {type:string;payload:Record<string,unknown>;requestId:string};
 export type DirectoryPerson = {name:string;unit:string;initials:string};
-export type ConnectedState = DemoState & {residents:DirectoryPerson[]};
+export type ConnectedState = DemoState & {residents:DirectoryPerson[];condominiumName?:string};
 declare global {interface Window {IMPERIUM_CONFIG?:RuntimeConfig}}
 
 export function normalizeApiUrl(value:string):string {
@@ -13,8 +13,11 @@ export function normalizeApiUrl(value:string):string {
   return url.href.replace(/\/$/,'');
 }
 export function createConfiguredApi():CondominiumApi|null {
-  if(typeof window==='undefined'||!window.IMPERIUM_CONFIG?.apiBaseUrl?.trim())return null;
-  return new CondominiumApi(window.IMPERIUM_CONFIG);
+  if(typeof window==='undefined')return null;
+  const config=window.IMPERIUM_CONFIG,operational=new URLSearchParams(window.location.search).get('ambiente')==='operacao';
+  const base=operational?config?.operationalApiBaseUrl:config?.apiBaseUrl;
+  if(!base?.trim()){if(operational)throw Error('O endereço do ambiente operacional não está configurado.');return null;}
+  return new CondominiumApi({...config,apiBaseUrl:base});
 }
 
 // This client only talks to the condominium backend. It never calls a reader,
@@ -41,7 +44,7 @@ export class CondominiumApi {
     const user=data?.user;
     if(typeof data?.accessToken!=='string'||data.accessToken.length<16||!user||user.role!==role||typeof user.name!=='string'||typeof user.email!=='string'||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now()||(role==='resident'&&typeof user.unit!=='string'))throw Error('A API retornou uma sessão inválida.');
     this.token=data.accessToken;
-    return {mode:'api',role,name:user.name,email:user.email,unit:user.unit,expiresAt:Date.parse(data.expiresAt)};
+    return {mode:'api',role,name:user.name,email:user.email,unit:user.unit,expiresAt:Date.parse(data.expiresAt),capabilities:{admin:user.capabilities?.admin===true,manualRelease:user.capabilities?.manualRelease===true}};
   }
   async state():Promise<ConnectedState>{
     const data=await this.request('/v1/state');
@@ -55,7 +58,13 @@ export class CondominiumApi {
   }
   async logout(){try{if(this.token)await this.request('/v1/auth/logout','POST',{});}finally{this.token='';}}
   clearSession(){this.token='';}
+  async integrations():Promise<IntegrationState>{return this.request('/v1/integrations')}
+  async release(deviceId:string,reason:string){return this.request('/v1/gates/release','POST',{deviceId,reason,requestId:crypto.randomUUID()})}
+  async administer(operation:string,body:Record<string,unknown>){return this.request('/v1/admin/'+operation,'POST',body)}
 }
+
+export type IntegrationDevice={id:string;name:string;provider:string;model:string;gate:string;gateway_id:string;enabled:boolean;commissioned:boolean;mode:string};
+export type IntegrationState={devices:IntegrationDevice[];gateways:{id:string;name:string;enabled:boolean;last_seen:string|null}[];jobs:{id:string;device_id:string;gate:string;status:string;created_at:string}[];admin:boolean;canRelease:boolean};
 
 // Convert the existing UI actions into semantic commands. The API must repeat
 // all validation and enforce the authenticated person's role and unit.

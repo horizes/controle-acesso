@@ -1,0 +1,11 @@
+# Import the equivalent settings into the condominium's VPN-capable router.
+# Example addresses: adapt to the actual LAN and avoid overlapping networks.
+[Interface]
+PrivateKey = CONDOMINIUM_ROUTER_PRIVATE_KEY
+Address = 10.200.0.2/32
+
+[Peer]
+PublicKey = CLOUD_PUBLIC_KEY
+Endpoint = YOUR_CLOUD_PUBLIC_IP:51820
+AllowedIPs = 10.200.0.1/32
+PersistentKeepalive = 25

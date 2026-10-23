@@ -8,7 +8,11 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "test": "node scripts/check-demo.mjs",
+    "test": "node scripts/check-demo.mjs && node scripts/check-integration.mjs",
+    "test:integration": "node scripts/check-integration.mjs",
+    "build:server": "node scripts/build-server.mjs",
+    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
+    "gateway": "node gateway/run.mjs",
     "typecheck": "tsc --noEmit",
     "build": "node --import ./scripts/windows-fs-compat.mjs ./node_modules/vite/bin/vite.js build --outDir docs && node scripts/build-pwa.mjs",
     "preview": "vite preview --host 127.0.0.1"

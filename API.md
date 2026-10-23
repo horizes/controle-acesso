@@ -1,68 +1,71 @@
-# Conectar uma API ao Controle de Acesso
+# API · Imperium Controle de Acesso
 
-A interface permanece no GitHub Pages. Não há servidor, banco central, envio de notificações ou equipamento conectado nesta publicação. O cliente de API está implementado em `src/api-client.ts` e já é utilizado pelas telas quando há um endereço configurado.
+Endpoint implantado: https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api
 
-## Ativação
+O projeto Supabase é compartilhado com outra aplicação. Somente objetos ac_* e a Edge Function access-api pertencem a este sistema. Tabelas têm RLS e privilégios diretos revogados de anon/authenticated. A API valida usuário, condomínio, perfil e unidade com a chave de serviço do ambiente da função. O aviso informativo de RLS sem políticas é esperado no acesso exclusivo pelo servidor. [Referência Supabase](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 
-Implemente o contrato `public/api/openapi.json` em um serviço HTTPS. Depois altere somente `public/runtime-config.js` e publique novamente:
+## Interface e autenticação
 
-```js
-window.IMPERIUM_CONFIG = Object.freeze({
-  apiBaseUrl: 'https://api.seu-dominio.com',
-  requestTimeoutMs: 10000,
-  refreshIntervalMs: 15000
-});
+runtime-config.js contém somente endereços públicos. apiBaseUrl vazio mantém apresentação. operationalApiBaseUrl é selecionada por ?ambiente=operacao. Não se aceita URL de API pela query. Configuração inválida bloqueia entrada; falha na API não ativa contas fictícias.
+
+| Método e caminho | Autorização | Uso |
+| --- | --- | --- |
+| GET /v1/health | Pública | Saúde e homologação pendente |
+| POST /v1/auth/login | E-mail e senha | {role: desk ou resident, email, password} |
+| POST /v1/auth/logout | Bearer usuário | Revoga esta sessão na API de acesso |
+| GET /v1/state | Bearer usuário | Estado v2, diretório e nome do condomínio |
+| POST /v1/commands | Bearer usuário | {type, payload, requestId: UUID} |
+| GET /v1/integrations | Portaria/admin | Equipamentos, gateways e últimos comandos |
+| POST /v1/gates/release | Admin/portaria com can_release | {deviceId, reason, requestId: UUID} |
+
+Login retorna accessToken, expiresAt e user com perfil, nome, e-mail, unidade e capacidades. Cada requisição valida Supabase Auth e vínculo atual. Token fica em memória; recarregar requer novo login. Não há refresh token no cliente. CORS permite https://horizes.github.io; origem não substitui autenticação.
+
+Comandos: visit.create, visit.transition, parcel.receive, parcel.withdraw, invite.create, invite.cancel, booking.create, booking.cancel, request.create e request.resolve. Payloads no OpenAPI. Unidade, horários, permissões e transições são verificados no servidor; o navegador não escreve o estado completo. Morador recebe só sua unidade. Os espaços de reserva desta versão são Salão de festas, Churrasqueira e Espaço gourmet; adaptar antes de oferecer reservas reais.
+
+ac_commit_state usa revisão otimista sob lock e ID/hash do pedido. Reenvio do mesmo pedido não duplica o efeito. Códigos operacionais têm 128 bits aleatórios. Credenciais conferem validade, bloqueio e acesso em cada solicitação. Corpo máximo: 32 KiB. Telas atualizam a cada 15 s; conexões a cada 5 s.
+
+## Administração
+
+POST nas rotas /v1/admin/… exige Bearer de administrador. Formulários em Leitores e acessos → Administração.
+
+| Operação | Corpo |
+| --- | --- |
+| gateways | {name}; retorna token uma vez, banco armazena hash |
+| devices | {id, gatewayId, provider, name, model, gate, methods, mode, actuatorId?} |
+| memberships | {userId, role, name, unit, enabled, canRelease} |
+| credentials | {name, unit, profile, faceRef?, plate?, validFrom, validUntil, gates} |
+| bindings | {deviceId, externalId, credentialId} |
+| revoke-credential | {id} |
+| commission | {deviceId, enabled, commissioned, gatewayEnabled} |
+
+provider: controlid/intelbras/hikvision/zkteco/dahua/generic. methods: face/plate/code. mode: online/monitor. actuatorId associa câmera à controladora do mesmo gateway e acesso. API aceita vários métodos por dispositivo; formulário inicial cadastra um.
+
+Para usuários, criar/convidar a conta pelo fluxo de identidade escolhido no Supabase, confirmar e-mail e copiar o UUID de Authentication → Users. Vincular como resident (unidade obrigatória) ou desk. Não se pode mover conta de outro condomínio ou alterar o próprio vínculo nesta rota. Auth é compartilhado; ac_memberships é exclusivo deste aplicativo. Não há envio de convites/e-mail pelo painel de acesso.
+
+faceRef é referência interna, sem foto/template. Após cadastrar face no leitor, bindings associa seu ID externo à credencial. A tela Autorizações exibe o ID da credencial e permite bloqueio pelo administrador. Renovação de convite reaproveita cadastro anterior segundo as regras, com nova validade.
+
+## Gateway
+
+Rotas exigem token exclusivo de gateway habilitado, sentAt ISO ±60 s e requestId UUID único. Header X-Gateway-Signature é HMAC SHA-256 hexadecimal usando token como chave sobre:
+
+```text
+POST\n/v1/gateway/NOME_DA_ROTA\nCORPO_JSON_ORIGINAL
 ```
 
-O endereço acima é ilustrativo. Com `apiBaseUrl: ''`, o site utiliza os acessos públicos de apresentação. Com a API definida, o login usa o servidor, o estado vem da API e as operações são enviadas como comandos. Não há fallback automático para contas de apresentação se a API falhar. Uma URL inválida bloqueia o login e exibe o erro.
+Caminho assinado é lógico, sem prefixo do Supabase. Nonces são persistidos e eventId impede reemissão de autorização. Nunca registrar token ou URL ZKBio com access_token em logs.
 
-O arquivo de configuração é público e não contém tokens nem senhas. Ele usa rede sem cache do service worker. O token de usuário fica apenas na memória da página; recarregar exige novo login no modo API. As contas públicas de apresentação nunca são aceitas como autenticação de produção pelo cliente.
-
-## Endpoints consumidos pela interface
-
-| Método e caminho | Entrada | Saída |
+| Rota POST | Campos além de requestId/sentAt | Resposta |
 | --- | --- | --- |
-| `POST /v1/auth/login` | `role`, `email`, `password` | `accessToken`, `expiresAt`, `user` |
-| `POST /v1/auth/logout` | `{}` | `204` |
-| `GET /v1/state` | Bearer do usuário | Estado versão 2, incluindo `residents` |
-| `POST /v1/commands` | `type`, `payload`, `requestId` | Estado atualizado e autorizado para o usuário |
+| /v1/gateway/poll | Nenhum | {jobs, serverTime} |
+| /v1/gateway/ack | jobId, leaseId, status, vendorCode? | Status persistido |
+| /v1/gateway/identify | eventId, deviceId, method, identifier, purpose | allowed, reason, decisionId, expiresAt?, actuatorId? |
 
-O perfil `desk` representa portaria; `resident` representa morador. O servidor retorna a identidade e a unidade no login. `expiresAt` usa ISO 8601. Respostas `401` encerram a sessão; `403` informa falta de permissão; `409` solicita conferência por conflito. O servidor precisa serializar as operações que afetam o mesmo registro e proteger reservas contra sobreposição.
+purpose: authorization-request ou observation. Observação nunca libera. Face exige vínculo do dispositivo; placa é normalizada; código exige credencial ativa. Autorizações expiram em até 4 s e nunca depois da credencial. Reconhecimento ocorre no equipamento. Não há ingestão de imagens na API.
 
-A atualização entre dispositivos usa consultas ao estado a cada 15 segundos, configuráveis. As mudanças feitas pela própria tela usam a resposta do comando. Não há Web Push ou envio de WhatsApp/e-mail implementado nesta versão.
+Liberação manual exige motivo de 8 a 300 caracteres, dispositivo habilitado/homologado e gateway com contato nos últimos 45 s. Pedido expira em 10 s. Lease não retorna automaticamente à fila; timeout passa a unknown. Gateway registra recibo SQLite antes da atuação. Duplicatas e perda de ack não repetem acionamento. Ack aceita accepted/rejected/unknown. physicalState permanece unknown sem sensor.
 
-## Comandos
+## Limites desta entrega
 
-| Comando | Quem pode solicitar | Campos do payload |
-| --- | --- | --- |
-| `visit.create` | Portaria | `name`, `unit`, `host`, `type`, `note` |
-| `visit.transition` | Portaria; morador da unidade apenas para autorizar/recusar | `id`, `status` |
-| `parcel.receive` | Portaria | `name`, `unit`, `carrier`, `tracking`, `location`, `volumes` |
-| `parcel.withdraw` | Portaria | `id`, `receivedBy` |
-| `invite.create` | Portaria; morador da própria unidade | `name`, `unit`, `host`, `type`, `startsAt`, `endsAt`, `plate` opcional |
-| `invite.cancel` | Portaria; morador responsável | `id` |
-| `booking.create` | Morador | `area`, `startsAt`, `endsAt` |
-| `booking.cancel` | Morador responsável | `id` |
-| `request.create` | Morador | `subject`, `message` |
-| `request.resolve` | Portaria | `id` |
+Não há VPS instalada, equipamento conectado, sincronização de biometrias, notificações push/WhatsApp, sensor físico ou alta disponibilidade. Gateway depende da homologação descrita em INTEGRACOES.md. Limites do plano existente se aplicam aos dois aplicativos; nenhum plano adicional foi contratado.
 
-O cliente envia intenção, nunca o banco inteiro, permissões prontas ou decisão de abertura física. No cadastro de convite, a API gera código e identificadores. O servidor deve usar `requestId` como chave de idempotência por usuário e conservar a resposta de cada comando processado. Estados, nomes de unidade, datas e identificadores vindos do navegador precisam de validação no servidor.
-
-## Regras do servidor a implementar
-
-- Autenticação real, senhas protegidas por hash adequado, limites de tentativas, recuperação de acesso e provisionamento de usuários.
-- Autorização por condomínio, perfil e unidade em cada endpoint. O morador recebe somente seus registros, inclusive no histórico e na lista `residents`. O cliente interrompe uma resposta com registros de outras unidades; essa verificação não substitui autorização no servidor.
-- Persistência, transações, trilha de auditoria, backup e retenção. O código do navegador e seus estados são públicos e não constituem barreira de segurança.
-- Validação da janela de acesso usando o relógio do servidor. O intervalo é inclusivo no início e exclusivo no término. Bloqueios, portas permitidas e renovação devem ser conferidos antes da decisão.
-- CORS restrito à origem do site. O cliente usa JSON e `Authorization: Bearer`, sem cookies; responda ao `OPTIONS` permitindo os cabeçalhos necessários. O caminho do projeto não faz parte da origem CORS: nesta publicação, a origem é `https://horizes.github.io`.
-- Nenhuma resposta de autenticação ou de estado deve ser armazenada em cache. As senhas e os tokens de fabricantes pertencem exclusivamente ao serviço ou ao gateway.
-
-## Equipamentos
-
-O navegador não chama câmeras ou controladoras. O contrato de gateway em `public/api/gateway-event.schema.json` e as funções de normalização/HMAC em `src/equipment-events.ts` são a base para a futura integração. Os contratos são documentação e código de preparação; os endpoints do gateway ainda não existem nesta hospedagem.
-
-Uma consulta preventiva usa `purpose: "authorization-request"` apenas quando o equipamento está configurado em modo online compatível. Um evento após a identificação usa `purpose: "observation"`: ele registra o ocorrido e não ordena abertura. A chave HMAC, o controle de repetição durável por `eventId`, a associação de identificadores e os comandos físicos ficam no servidor/gateway. Veja [INTEGRACOES.md](./INTEGRACOES.md) para as diferenças entre fabricantes.
-
-## Validação antes de ativar
-
-Teste com contas distintas: o morador de uma unidade não pode consultar ou alterar outra; portaria não pode administrar usuários sem permissão própria. Teste expiração, revogação, porta errada, evento repetido, comando repetido, perda de conexão, resposta incerta e retorno de energia. Uma falha de comunicação não deve ser apresentada como porta aberta. A política de contingência precisa estar configurada e conferida no próprio equipamento.
+O estado usa documento por condomínio com revisão. Para expansão, medir latência e contenção e particionar entidades/auditoria. Definir retenção, backup, monitoramento e contingência antes da operação. Falha de rede nega novas autorizações online; política local do leitor precisa ser configurada para não ignorar validade.

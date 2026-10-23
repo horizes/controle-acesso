@@ -1,0 +1,25 @@
+[Unit]
+Description=Imperium access gateway
+After=network-online.target wg-quick@wg-imperium.service
+Wants=network-online.target
+Requires=wg-quick@wg-imperium.service
+
+[Service]
+Type=simple
+User=imperium
+Group=imperium
+WorkingDirectory=/opt/imperium/controle-acesso
+EnvironmentFile=/etc/imperium/gateway.env
+ExecStart=/usr/bin/node gateway/run.mjs /etc/imperium/gateway.private.json
+Restart=on-failure
+RestartSec=5
+StateDirectory=imperium-gateway
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/imperium-gateway
+
+[Install]
+WantedBy=multi-user.target

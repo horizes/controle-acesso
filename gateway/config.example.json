@@ -1,0 +1,15 @@
+{
+  "apiBaseUrl": "https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api",
+  "gatewayTokenEnv": "IMPERIUM_GATEWAY_TOKEN",
+  "journalFile": "/data/imperium.sqlite",
+  "physicalEnabled": false,
+  "callbackListen": {"host":"10.200.0.1","port":8765},
+  "devices": [
+    {"id":"social-controlid","provider":"controlid","protocol":"controlid-online","gate":"social","enabled":false,"commissioned":false,"baseUrl":"http://10.201.0.10","usernameEnv":"CID_USERNAME","passwordEnv":"CID_PASSWORD","vendorDeviceId":"123","portalId":1,"sourceIp":"10.201.0.10","action":"door","door":1},
+    {"id":"garagem-intelbras","provider":"intelbras","protocol":"http-cgi","gate":"garagem","enabled":false,"commissioned":false,"baseUrl":"http://10.201.0.20","usernameEnv":"INTELBRAS_USERNAME","passwordEnv":"INTELBRAS_PASSWORD","channel":1},
+    {"id":"camera-placas","provider":"intelbras","protocol":"http-events","gate":"garagem","enabled":false,"commissioned":false,"baseUrl":"http://10.201.0.21","usernameEnv":"LPR_USERNAME","passwordEnv":"LPR_PASSWORD","watchEvents":false,"nativeAutomaticOpeningDisabled":false},
+    {"id":"social-hikvision","provider":"hikvision","protocol":"hcnetsdk","gate":"social","enabled":false,"commissioned":false,"host":"10.201.0.30","sdkPort":8000,"channel":1,"usernameEnv":"HIK_USERNAME","passwordEnv":"HIK_PASSWORD","helperCommand":["/opt/imperium/imperium-hikvision-open"]},
+    {"id":"social-zkteco","provider":"zkteco","protocol":"zkbio-cvsecurity","gate":"social","enabled":false,"commissioned":false,"baseUrl":"https://10.201.0.40","tokenEnv":"ZKBIO_API_TOKEN","doorId":"OBTER_NO_CVSECURITY","interval":1},
+    {"id":"social-dahua","provider":"dahua","protocol":"licensed-bridge","gate":"social","enabled":false,"commissioned":false,"licensedBridgeReady":false,"baseUrl":"https://10.201.0.50","tokenEnv":"DAHUA_BRIDGE_TOKEN","doorId":"OBTER_NO_DSS"}
+  ]
+}

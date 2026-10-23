@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(imperium_hikvision_bridge LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_path(HCNETSDK_INCLUDE HCNetSDK.h HINTS "$ENV{HCNETSDK_ROOT}/include" REQUIRED)
+find_library(HCNETSDK_LIB NAMES hcnetsdk HCNetSDK HINTS "$ENV{HCNETSDK_ROOT}/lib" REQUIRED)
+add_executable(imperium-hikvision-open hikvision-open.cpp)
+target_include_directories(imperium-hikvision-open PRIVATE "${HCNETSDK_INCLUDE}")
+target_link_libraries(imperium-hikvision-open PRIVATE "${HCNETSDK_LIB}")

@@ -41,6 +41,6 @@ export default function AccessEntry({role,onSelect,onLogin,onApiLogin,apiMode=fa
         <div className="im-access-options"><button onClick={()=>select('desk')}><Monitor size={25} strokeWidth={1.5}/><span><b>Portaria</b><small>Atendimento e controle do condomínio</small></span><ChevronRight size={19}/></button><button onClick={()=>select('resident')}><Smartphone size={25} strokeWidth={1.5}/><span><b>Morador</b><small>Acesso à sua unidade e serviços</small></span><ChevronRight size={19}/></button></div>
       </>}
     </section>
-    <footer><LockKeyhole size={13}/>{apiMode?'Acesso integrado à API do condomínio.':'Ambiente de apresentação · dados fictícios'}<span>Imperium Terceirização e Serviços</span></footer>
+    <footer><LockKeyhole size={13}/>{apiMode?'Ambiente operacional · acesso restrito':'Ambiente de apresentação · dados fictícios'}<a className="im-environment-link" href={(apiMode?'?':'?ambiente=operacao')+(role==='desk'?'#portaria':role==='resident'?'#morador':'')}>{apiMode?'Abrir demonstração':'Acessar operação'}</a><span>Imperium Terceirização e Serviços</span></footer>
   </main>;
 }

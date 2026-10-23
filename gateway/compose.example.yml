@@ -1,0 +1,20 @@
+services:
+  imperium-gateway:
+    build:
+      context: ..
+      dockerfile: gateway/Dockerfile
+    restart: unless-stopped
+    # VPN is established on the cloud host, outside this container.
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 100
+    mem_limit: 256m
+    env_file: .env
+    volumes:
+      - ./config.private.json:/run/imperium/config.json:ro
+      - gateway-data:/data
+    tmpfs: [/tmp]
+volumes:
+  gateway-data:

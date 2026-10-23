@@ -1,0 +1,11 @@
+# Install as /etc/wireguard/wg-imperium.conf on the private cloud server.
+# Generate private/public keys on each peer; replace every placeholder.
+[Interface]
+PrivateKey = CLOUD_PRIVATE_KEY
+Address = 10.200.0.1/32
+ListenPort = 51820
+
+[Peer]
+PublicKey = CONDOMINIUM_ROUTER_PUBLIC_KEY
+# Route only the condominium VPN peer and the specific equipment addresses.
+AllowedIPs = 10.200.0.2/32, 10.201.0.10/32, 10.201.0.20/32, 10.201.0.21/32, 10.201.0.30/32, 10.201.0.40/32, 10.201.0.50/32

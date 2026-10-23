@@ -51,6 +51,7 @@ await build({stdin:{contents:"import React from 'react';import {renderToString} 
 const renderer=await import(pathToFileURL(path.resolve('.checks/render.mjs')).href+'?'+Date.now());
 for(const screen of ['welcome','desk','resident']){const html=renderer.render(screen);ok(html.includes('IMPERIUM')&&html.includes(screen==='welcome'?'Selecione sua área':screen==='desk'?'Acesso à portaria':'Acesso do morador'),'separate entry renders: '+screen);ok(!/ChatGPT|Codex|Inteligência artificial|IA generativa/.test(html),'no unrelated product branding: '+screen);if(screen!=='welcome')ok(!html.includes('Mariana Costa')&&html.includes('type="password"'),'application requires presentation sign-in: '+screen)}
 const manifest=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'));ok(manifest.display==='standalone'&&manifest.start_url.includes('morador')&&manifest.icons.length===2,'resident PWA manifest');
+const operationalManifest=JSON.parse(readFileSync('public/manifest-operacao.webmanifest','utf8'));ok(operationalManifest.start_url.includes('ambiente=operacao')&&operationalManifest.id!==manifest.id,'installed operation keeps its environment separate');
 const equipment=await import(pathToFileURL(path.resolve('.checks/equipment-events.mjs')).href+'?'+Date.now());
 const cfg={provider:'generic',deviceId:'social-01',gate:'social',method:'face',mode:'online'};
 const envelope={version:1,purpose:'authorization-request',eventId:'event-001',provider:'generic',deviceId:'social-01',gate:'social',method:'face',mode:'online',identifier:'FACE-ANA-102',sentAt:new Date().toISOString()};
@@ -93,4 +94,10 @@ await assert.rejects(()=>client.login('desk','portaria@imperium.demo','example')
 await client.logout();await client.state();ok(!requests.at(-1).options.headers.Authorization,'logout clears memory token');
 const source=readFileSync('src/experience.tsx','utf8');ok(!source.includes('im-product-bar')&&!source.includes('im-phone')&&!source.includes('im-intro'),'presentation chrome removed');
 const css=readFileSync('src/platform.css','utf8');ok(css.includes('#0A0A09')&&css.includes('#D7B247')&&css.includes('Oswald')&&css.includes('Barlow'),'original platform tokens');
+globalThis.window={IMPERIUM_CONFIG:{apiBaseUrl:'',operationalApiBaseUrl:'https://operation.example.test'},location:{search:''}};
+ok(api.createConfiguredApi()===null,'operational endpoint does not enable API on presentation');
+window.location.search='?ambiente=operacao&apiBaseUrl=https://attacker.example';
+ok(api.createConfiguredApi().baseUrl==='https://operation.example.test','operation uses only trusted runtime configuration');
+window.IMPERIUM_CONFIG.operationalApiBaseUrl='';assert.throws(()=>api.createConfiguredApi(),/configurado/);checks++;
+delete globalThis.window;
 console.log(`${checks} demo checks passed: authorization boundaries, biometrics IDs, plates, temporal visits, revocation, shared flows, QR, reservations, views and PWA metadata.`);
