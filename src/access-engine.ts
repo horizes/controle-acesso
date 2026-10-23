@@ -21,10 +21,10 @@ export function evaluateAccess(credentials:Credential[],signal:AccessSignal,cloc
  return result(true,c.profile==='Morador'?'Morador com credencial ativa.':'Autorização dentro do prazo de validade.',c);
 }
 export const integrationProfiles=[
- {name:'Control iD',protocol:'API de acesso · Monitor',description:'Eventos e credenciais de leitores iDFace e da linha de acesso.',state:'Homologar modelo'},
- {name:'Intelbras',protocol:'API / SDK de acesso',description:'Linhas faciais e controladoras com interface de integração liberada pelo fabricante.',state:'Homologar modelo'},
- {name:'Hikvision',protocol:'ISAPI / SDK',description:'Leitores de acesso e eventos de câmeras de leitura de placas.',state:'Homologar modelo'},
- {name:'Dahua',protocol:'HTTP API / SDK',description:'Perfil de integração para leitores e câmeras compatíveis.',state:'Planejado'},
- {name:'ZKTeco',protocol:'API / SDK por linha',description:'Perfil de integração sujeito à linha e ao firmware do equipamento.',state:'Planejado'},
+ {name:'Control iD',protocol:'API de acesso · modo online / Monitor',description:'Consulta preventiva no modo online compatível. Monitor é usado para auditoria; a ação de porta varia por família.',state:'Homologar modelo'},
+ {name:'Intelbras',protocol:'HTTP Digest · CGI / SDK por modelo',description:'Portas e eventos AccessControl. Leitura de placas TrafficJunction depende das capacidades do equipamento.',state:'Homologar modelo'},
+ {name:'Hikvision',protocol:'ISAPI · Digest / SDK',description:'Eventos de acesso e câmeras ANPR. Comandos de porta e capacidades devem seguir o guia do modelo.',state:'Homologar modelo'},
+ {name:'Dahua',protocol:'DSS · DEPP / SDK',description:'Integração pela plataforma DSS, com pacote oficial, aprovação e licença de API do fabricante.',state:'Requer API licenciada'},
+ {name:'ZKTeco',protocol:'ZKBio CVSecurity 6+ / SDK por linha',description:'API licenciada do servidor CVSecurity. Outras famílias utilizam ponte com o SDK ou protocolo próprio.',state:'Requer servidor compatível'},
  {name:'Outros fabricantes',protocol:'Evento HTTP normalizado',description:'Entrada comum para eventos enviados por um conector do equipamento.',state:'Contrato definido'},
 ];

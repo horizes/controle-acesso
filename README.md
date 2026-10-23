@@ -1,25 +1,46 @@
-# Imperium · Acesso & convivência
+# Imperium · Controle de Acesso
 
-Demonstração para condomínios com portaria e painel do morador. Identidade visual em preto, dourado e tons naturais.
+Interface de portaria e morador com a identidade da plataforma Imperium: logo original, Oswald e Barlow, fundo `#0A0A09`, painéis `#15130F` e dourado `#D7B247`.
 
-## Experimente
+## Acessos
 
-- [Apresentação](https://horizes.github.io/controle-acesso/)
+- [Selecionar acesso](https://horizes.github.io/controle-acesso/)
 - [Portaria](https://horizes.github.io/controle-acesso/#portaria)
-- [Painel do morador](https://horizes.github.io/controle-acesso/#morador)
+- [Morador](https://horizes.github.io/controle-acesso/#morador)
 
-Todos os registros são fictícios. As alterações ficam no navegador e podem ser reiniciadas no menu da demonstração. Não há contas reais nem acionamento de equipamentos.
+As áreas têm telas de entrada separadas. O perfil do morador define a unidade visível. Em cada tela de login, “Acessos de apresentação” mostra as contas fictícias e preenche o formulário.
 
-## Fluxos incluídos
+| Perfil | E-mail público de exemplo | Senha pública de exemplo |
+| --- | --- | --- |
+| Portaria | `portaria@imperium.demo` | `Imperium@2026` |
+| Moradora Ana, 102 Torre A | `ana@imperium.demo` | `Imperium@2026` |
+| Morador Bruno, 304 Torre B | `bruno@imperium.demo` | `Imperium@2026` |
+| Moradora Clara, 201 Torre A | `clara@imperium.demo` | `Imperium@2026` |
 
-- Visitas: cadastro, autorização pelo morador, entrada e saída.
-- Encomendas: recebimento e retirada identificada, visíveis para a unidade.
-- Convites e QR Code: início, término, renovação e cancelamento.
-- Acesso: validação de identificador facial, placa ou código, com bloqueio, prazo e porta permitida. As leituras são simuladas.
-- Reservas de espaços, solicitações da portaria e histórico exportável.
-- Painel do morador responsivo e estrutura PWA instalável quando servida por HTTPS.
+Essas contas são fixtures públicas. Não protegem dados reais. As alterações da apresentação ficam no navegador e podem ser reiniciadas em Configurações na portaria. Portaria e morador compartilham a apresentação somente no mesmo navegador/origem; outra máquina não recebe esses dados sem uma API.
 
-## Desenvolver
+## Funções demonstráveis
+
+Visitas com cadastro, autorização, entrada e saída; encomendas com recebimento e retirada identificada; convites e QR Code com início, término e cancelamento; renovação de autorização aproveitando identificador anterior; conferência simulada de face/placa/código, bloqueio e porta permitida; reservas com verificação de conflito; solicitações e histórico CSV. O morador possui interface responsiva e PWA para adicionar à tela inicial.
+
+## Preparado para API
+
+O site permanece apenas no GitHub Pages. `public/runtime-config.js` permite definir uma API HTTPS compatível. O cliente já inclui login por servidor, token em memória, leitura do estado, comandos de operações e atualização periódica. Sem endereço configurado, usa o modo de apresentação. Não há servidor nem equipamentos conectados nesta publicação.
+
+Veja [API.md](./API.md), [OpenAPI](./public/api/openapi.json) e [integrações por fabricante](./INTEGRACOES.md).
+
+```mermaid
+flowchart LR
+  P[Portaria no GitHub Pages] --> A[API futura do condomínio]
+  M[Morador no GitHub Pages] --> A
+  A --> B[Banco central e permissões]
+  A <--> G[Gateway na rede do condomínio]
+  G <--> D[Leitores, câmeras e controladoras]
+```
+
+Não colocar credenciais de equipamentos, chaves de serviço ou senhas reais no código público. Consultas preventivas e eventos de auditoria são tratados como finalidades diferentes. A conexão física depende de modelo, firmware, licenças e homologação.
+
+## Desenvolvimento
 
 Use Node.js 24 ou superior.
 
@@ -30,32 +51,24 @@ npm run typecheck
 npm run dev
 ```
 
-Para atualizar o site:
+Para atualizar o GitHub Pages:
 
 ```sh
 npm run build
 ```
 
-A saída fica em `docs/`. O GitHub Pages deve publicar a branch `main`, diretório `/docs`. Os caminhos relativos permitem hospedagem na pasta do repositório.
-
-## Instalar no celular
-
-Abra o link do painel do morador em um navegador compatível. No iPhone, use Compartilhar → Adicionar à Tela de Início; no Android, use Instalar aplicativo ou Adicionar à tela inicial. A demonstração inclui manifest, ícones e cache do aplicativo.
-
-## Equipamentos
-
-O motor de autorização é independente do fabricante. O contrato HTTP, a verificação HMAC e o mapeamento de eventos do Monitor Control iD estão em `src/equipment-events.ts`. Perfis de Intelbras e Hikvision orientam a homologação; a conexão real depende da API, do modelo e do firmware. Dahua e ZKTeco estão planejados. Consulte [INTEGRACOES.md](INTEGRACOES.md).
-
-A lógica não processa imagens biométricas nem reconhece rostos por câmera: ela recebe o identificador do leitor e confere a autorização. Endpoints de liberação física não estão habilitados.
+Publique o conteúdo de `docs/` na branch `main`. O Pages está configurado para esse diretório. O build usa caminhos relativos; o service worker atualiza o aplicativo e não intercepta chamadas externas de API nem o arquivo de configuração em tempo de execução.
 
 ## Organização
 
-- `src/experience.tsx`: apresentação, portaria e morador.
-- `src/experience.css`: identidade e layouts responsivos.
-- `src/demo-model.ts`: operações compartilhadas da demonstração.
-- `src/access-engine.ts`: regras de autorização.
-- `src/equipment-events.ts`: contrato de integração e assinatura.
-- `scripts/check-demo.mjs`: testes de regras, renderização e integração.
-- `docs/`: versão compilada para o GitHub Pages.
+- `src/experience.tsx`: operações e telas dos dois perfis.
+- `src/access-entry.tsx` e `src/access-session.ts`: entradas e sessões de apresentação.
+- `src/platform.css`: identidade e componentes da plataforma.
+- `src/api-client.ts`: autenticação e comandos para a API futura.
+- `src/demo-model.ts`: dados fictícios e regras da apresentação.
+- `src/access-engine.ts`: avaliação de validade, bloqueio e porta.
+- `src/equipment-events.ts`: contrato de gateway, assinatura e observação Control iD.
+- `public/api/`: contratos de integração em JSON.
+- `scripts/check-demo.mjs`: verificações de regras, sessões e cliente de API.
 
-Fotografia: [Chris Weiher / Unsplash](https://unsplash.com/photos/aerial-view-of-a-modern-apartment-complex-with-courtyard-xkK6BG5CBBM). Dependências mantêm suas licenças próprias.
+As verificações de API usam respostas simuladas. Não houve homologação em equipamentos físicos ou teste de notificação real. O uso operacional requer os serviços descritos em API.md e testes no condomínio.

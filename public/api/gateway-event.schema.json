@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Contrato futuro gateway → API Imperium",
+  "description": "HMAC no corpo original; validação por configuração; eventId único persistente; observation nunca ordena abertura.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 180
+    },
+    "provider": {
+      "enum": [
+        "controlid",
+        "intelbras",
+        "hikvision",
+        "dahua",
+        "zkteco",
+        "generic"
+      ]
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sentAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "method": {
+      "enum": [
+        "face",
+        "plate",
+        "code"
+      ]
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250
+    },
+    "gate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "enum": [
+        "authorization-request",
+        "observation"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "eventId",
+    "provider",
+    "deviceId",
+    "sentAt",
+    "method",
+    "identifier",
+    "gate",
+    "purpose"
+  ],
+  "additionalProperties": false
+}
