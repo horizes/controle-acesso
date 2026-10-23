@@ -1,0 +1,16 @@
+{
+  "id": "./morador",
+  "name": "Imperium · Meu condomínio",
+  "short_name": "Imperium",
+  "description": "Visitas, convites e encomendas do seu condomínio. Ambiente de demonstração.",
+  "lang": "pt-BR",
+  "start_url": "./#morador",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8f0",
+  "theme_color": "#f7f8f0",
+  "icons": [
+    {"src":"./icons/imperium-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icons/imperium-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
