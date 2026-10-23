@@ -1,5 +1,7 @@
 # Integrações com equipamentos
 
+O [guia de implantação](./IMPLANTACAO.md) contém o passo a passo individual de instalação e integração de cada família, incluindo ligação, rede, cadastro, testes e retorno. Os [perfis e formulários](./gateway/installation/) acompanham o pacote de instalação.
+
 API e banco estão no Supabase. Adaptadores em gateway/ executam na estrutura privada da Imperium, com VPN até o roteador do condomínio. O gateway não depende do computador da portaria. Permanecem necessários rede, energia, equipamentos e roteador compatível. Nenhum modelo foi testado fisicamente nesta entrega.
 
 | Caminho | Implementação | Pendência |

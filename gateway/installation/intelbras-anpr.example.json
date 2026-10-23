@@ -1,0 +1,13 @@
+{
+  "id":"camera-placas",
+  "provider":"intelbras",
+  "protocol":"http-events",
+  "gate":"garagem",
+  "enabled":false,
+  "commissioned":false,
+  "baseUrl":"http://10.201.0.21",
+  "usernameEnv":"LPR_USERNAME",
+  "passwordEnv":"LPR_PASSWORD",
+  "watchEvents":false,
+  "nativeAutomaticOpeningDisabled":false
+}

@@ -1,0 +1,12 @@
+{
+  "id":"social-dahua",
+  "provider":"dahua",
+  "protocol":"licensed-bridge",
+  "gate":"social",
+  "enabled":false,
+  "commissioned":false,
+  "licensedBridgeReady":false,
+  "baseUrl":"https://10.201.0.50",
+  "tokenEnv":"DAHUA_BRIDGE_TOKEN",
+  "doorId":"OBTER_NO_DSS"
+}

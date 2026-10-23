@@ -1,0 +1,12 @@
+{
+  "id":"garagem-intelbras",
+  "provider":"intelbras",
+  "protocol":"http-cgi",
+  "gate":"garagem",
+  "enabled":false,
+  "commissioned":false,
+  "baseUrl":"http://10.201.0.20",
+  "usernameEnv":"INTELBRAS_USERNAME",
+  "passwordEnv":"INTELBRAS_PASSWORD",
+  "channel":1
+}

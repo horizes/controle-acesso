@@ -1,0 +1,16 @@
+{
+  "id":"social-idface",
+  "provider":"controlid",
+  "protocol":"controlid-online",
+  "gate":"social",
+  "enabled":false,
+  "commissioned":false,
+  "baseUrl":"http://10.201.0.10",
+  "usernameEnv":"CID_USERNAME",
+  "passwordEnv":"CID_PASSWORD",
+  "vendorDeviceId":"OBTER_NO_LEITOR",
+  "portalId":1,
+  "sourceIp":"10.201.0.10",
+  "action":"sec_box",
+  "secBoxId":"OBTER_NO_MODULO"
+}

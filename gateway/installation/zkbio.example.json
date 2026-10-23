@@ -1,0 +1,12 @@
+{
+  "id":"social-zkteco",
+  "provider":"zkteco",
+  "protocol":"zkbio-cvsecurity",
+  "gate":"social",
+  "enabled":false,
+  "commissioned":false,
+  "baseUrl":"https://10.201.0.40",
+  "tokenEnv":"ZKBIO_API_TOKEN",
+  "doorId":"OBTER_NO_CVSECURITY",
+  "interval":1
+}

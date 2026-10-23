@@ -39,10 +39,13 @@ Aceite pelo equipamento não confirma posição física do portão. Não há sen
 
 ## Instalação e contratos
 
-- [Guia de implantação](./IMPLANTACAO.md)
+- [Guia de implantação e passo a passo de cada aparelho](./IMPLANTACAO.md)
+- [Perfis de configuração, inventário e fichas de aceite](./gateway/installation/)
 - [Protocolos e limitações por marca](./INTEGRACOES.md)
 - [API e administração](./API.md), [OpenAPI](./public/api/openapi.json)
 - [Roteiro de apresentação](./GUIA-DEMONSTRACAO.md)
+
+Antes do piloto, corrigir a renovação por nome para preservar identidade/unidade e vínculos faciais, além de cumprir as demais pendências e testes descritos na implantação. As fichas de exemplo não representam homologação física.
 
 ## Desenvolvimento
 

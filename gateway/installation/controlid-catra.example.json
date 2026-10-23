@@ -1,0 +1,16 @@
+{
+  "id":"catraca-controlid",
+  "provider":"controlid",
+  "protocol":"controlid-online",
+  "gate":"catraca",
+  "enabled":false,
+  "commissioned":false,
+  "baseUrl":"http://10.201.0.11",
+  "usernameEnv":"CID_USERNAME",
+  "passwordEnv":"CID_PASSWORD",
+  "vendorDeviceId":"OBTER_NO_LEITOR",
+  "portalId":1,
+  "sourceIp":"10.201.0.11",
+  "action":"catra",
+  "direction":"clockwise"
+}

@@ -1,0 +1,14 @@
+{
+  "id":"social-hikvision",
+  "provider":"hikvision",
+  "protocol":"hcnetsdk",
+  "gate":"social",
+  "enabled":false,
+  "commissioned":false,
+  "host":"10.201.0.30",
+  "sdkPort":8000,
+  "channel":1,
+  "usernameEnv":"HIK_USERNAME",
+  "passwordEnv":"HIK_PASSWORD",
+  "helperCommand":["/opt/imperium/bin/imperium-hikvision-open"]
+}
