@@ -9,7 +9,9 @@ from pathlib import Path
 REVISION = "e0274f586536df608eec8c718775dfc635e305d1"
 
 
-def render(admin_cidr, public_key):
+def render(admin_cidr, public_key, provider="digitalocean"):
+    if provider not in {"digitalocean", "oracle"}:
+        raise ValueError("Provedor inválido.")
     network = ipaddress.ip_network(admin_cidr, strict=True)
     if network.version != 4 or network.prefixlen != 32:
         raise ValueError("Informe o IPv4 público de administração com /32.")
@@ -21,8 +23,12 @@ def render(admin_cidr, public_key):
             or raw[4:15] != b"ssh-ed25519" or raw[15:19] != struct.pack(">I", 32)):
         raise ValueError("Chave pública Ed25519 inválida.")
     public_key = " ".join(fields[:2])
-    settings = {"admin_cidr": str(network), "revision": REVISION}
+    settings = {"admin_cidr": str(network), "revision": REVISION, "provider": provider}
     bootstrap = Path(__file__).with_name("setup-host.py").read_text(encoding="utf-8")
+    packages = ["ca-certificates", "git", "docker.io", "docker-compose-v2",
+                "wireguard", "unattended-upgrades"]
+    if provider != "oracle":
+        packages.append("ufw")
     config = {
         "hostname": "imperium-gateway-01",
         "manage_etc_hosts": True,
@@ -32,8 +38,7 @@ def render(admin_cidr, public_key):
         "users": [{"name": "imperium-admin", "shell": "/bin/bash", "lock_passwd": True,
                    "sudo": ["ALL=(ALL) NOPASSWD:ALL"], "ssh_authorized_keys": [public_key]}],
         "package_update": True,
-        "packages": ["ca-certificates", "git", "docker.io", "docker-compose-v2",
-                     "wireguard", "ufw", "unattended-upgrades"],
+        "packages": packages,
         "write_files": [
             {"path": "/usr/local/lib/imperium/setup-host.py", "permissions": "0700",
              "owner": "root:root", "content": bootstrap},
@@ -53,9 +58,10 @@ if __name__ == "__main__":
     parser.add_argument("--admin-cidr", required=True)
     parser.add_argument("--ssh-public-key", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--provider", choices=["digitalocean", "oracle"], default="digitalocean")
     args = parser.parse_args()
     try:
-        result = render(args.admin_cidr, args.ssh_public_key.read_text(encoding="utf-8"))
+        result = render(args.admin_cidr, args.ssh_public_key.read_text(encoding="utf-8"), args.provider)
         # Do not overwrite a file that may have been reviewed already.
         with args.output.open("x", encoding="utf-8", newline="\n") as destination:
             destination.write(result)

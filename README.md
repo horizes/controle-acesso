@@ -41,6 +41,7 @@ Aceite pelo equipamento não confirma posição física do portão. Não há sen
 
 - [Guia de implantação e passo a passo de cada aparelho](./IMPLANTACAO.md)
 - [Preparação da VPS Imperium e proposta de hospedagem](./gateway/cloud/README.md)
+- [Oracle Cloud gratuita — instalação e limites](./gateway/cloud/ORACLE.md)
 - [Perfis de configuração, inventário e fichas de aceite](./gateway/installation/)
 - [Protocolos e limitações por marca](./INTEGRACOES.md)
 - [API e administração](./API.md), [OpenAPI](./public/api/openapi.json)

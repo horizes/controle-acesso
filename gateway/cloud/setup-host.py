@@ -1,7 +1,9 @@
 """Executed by cloud-init on a NEW Ubuntu 24.04 VPS, as root."""
 import json
+import ipaddress
 import os
 from pathlib import Path
+import shutil
 import subprocess
 
 
@@ -15,6 +17,61 @@ def private_file(path, content):
     with target.open("x", encoding="utf-8") as file:
         os.chmod(target, 0o600)
         file.write(content)
+
+
+def oracle_rules(original, admin_cidr):
+    """Keep the image's essential storage/metadata rules and other tables intact."""
+    network = ipaddress.ip_network(admin_cidr, strict=True)
+    if network.version != 4 or network.prefixlen != 32:
+        raise ValueError("SSH exige um endereço IPv4 /32.")
+    lines = original.splitlines(keepends=True)
+    if original.count("*filter\n") != 1 or "IMPERIUM-IN" in original:
+        raise ValueError("Regras ausentes ou já alteradas; revisar manualmente.")
+    start = lines.index("*filter\n")
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == "COMMIT")
+    if not any(line.startswith(":INPUT ") for line in lines[start:end]):
+        raise ValueError("Cadeia INPUT ausente.")
+    first_rule = next((i for i in range(start + 1, end) if lines[i].startswith("-A ")), end)
+    own_rules = [
+        ":IMPERIUM-IN - [0:0]\n",
+        "-A INPUT -j IMPERIUM-IN\n",
+        "-A IMPERIUM-IN -i lo -j RETURN\n",
+        "-A IMPERIUM-IN -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN\n",
+        f"-A IMPERIUM-IN -p tcp -s {network} --dport 22 -j ACCEPT\n",
+        "-A IMPERIUM-IN -p tcp --dport 22 -j DROP\n",
+        "-A IMPERIUM-IN -p udp --dport 51820 -j ACCEPT\n",
+        "-A IMPERIUM-IN -p tcp --dport 8765 -j DROP\n",
+        "-A IMPERIUM-IN -j RETURN\n",
+    ]
+    return "".join(lines[:first_rule] + own_rules + lines[first_rule:])
+
+
+def configure_firewall(settings):
+    if settings.get("provider") != "oracle":
+        run("ufw", "default", "deny", "incoming")
+        run("ufw", "default", "allow", "outgoing")
+        run("ufw", "allow", "from", settings["admin_cidr"], "to", "any", "port", "22", "proto", "tcp")
+        run("ufw", "allow", "51820/udp")
+        run("ufw", "--force", "enable")
+        return
+    # OCI warns against UFW: it may remove boot-volume/iSCSI rules.
+    # Inspect an official image's persistent rules instead of flushing tables.
+    rules_file = Path("/etc/iptables/rules.v4")
+    original = rules_file.read_text(encoding="utf-8")
+    updated = oracle_rules(original, settings["admin_cidr"])
+    if not Path("/etc/systemd/system/multi-user.target.wants/netfilter-persistent.service").exists():
+        run("systemctl", "is-enabled", "netfilter-persistent")
+    if shutil.which("ufw") and subprocess.run(["ufw", "status"], capture_output=True, text=True).stdout.startswith("Status: active"):
+        raise RuntimeError("UFW ativo: revisar firewall OCI antes de prosseguir.")
+    run("iptables-restore", "--test", input=updated, text=True)
+    private_file("/etc/imperium/oracle-rules.original.private.conf", original)
+    private_file("/etc/imperium/oracle-rules.runtime.private.conf",
+                 subprocess.check_output(["iptables-save"], text=True))
+    rules_file.write_text(updated, encoding="utf-8")
+    os.chmod(rules_file, 0o600)
+    run("iptables-restore", input=updated, text=True)
+    # This is a fresh host with no containers. Recreate Docker's runtime chains.
+    run("systemctl", "restart", "docker")
 
 
 def main():
@@ -33,12 +90,7 @@ def main():
     run("git", "-C", str(repo), "checkout", "--detach", settings["revision"])
     run("sshd", "-t")
     run("systemctl", "reload", "ssh")
-    run("ufw", "default", "deny", "incoming")
-    run("ufw", "default", "allow", "outgoing")
-    run("ufw", "allow", "from", settings["admin_cidr"], "to", "any", "port", "22", "proto", "tcp")
-    run("ufw", "allow", "51820/udp")
-    # No public HTTP, SDK or callback ports. Private callbacks need explicit rules later.
-    run("ufw", "--force", "enable")
+    configure_firewall(settings)
     vpn = Path("/etc/wireguard")
     vpn.mkdir(parents=True, exist_ok=True, mode=0o700)
     key = subprocess.check_output(["wg", "genkey"], text=True).strip()

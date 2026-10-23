@@ -2,6 +2,8 @@
 
 **Situação: configuração preparada; VPS ainda não criada ou contratada.** Este pacote não faz compras nem exige token de hospedagem. A criação depende da conta do provedor e da autorização do custo.
 
+**Escolha atual do proprietário: tentar a Oracle Cloud gratuita.** Use o [procedimento Oracle Always Free](./ORACLE.md) e o gerador com `--provider oracle`. A proposta DigitalOcean abaixo fica apenas como referência; não foi contratada. O perfil Oracle preserva o firewall da imagem e não habilita UFW.
+
 ## Proposta para o piloto
 
 | Item | Configuração proposta |
