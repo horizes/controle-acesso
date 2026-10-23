@@ -10,6 +10,10 @@ export type AccessSession = {
   capabilities?:{admin:boolean;manualRelease:boolean};
 };
 
+export function sessionForEnvironment(session:AccessSession|undefined,apiMode:boolean,configurationError=''){
+  return !configurationError&&session?.mode===(apiMode?'api':'demo')?session:undefined;
+}
+
 // These public accounts are presentation fixtures, never production credentials.
 export const PRESENTATION_ACCOUNTS = [
   { role: 'desk', name: 'Ricardo Silva', email: 'portaria@imperium.demo' },

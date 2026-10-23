@@ -71,6 +71,8 @@ assert.throws(()=>equipment.normalizeEquipmentEnvelope({...envelope,purpose:unde
 const auth=await import(pathToFileURL(path.resolve('.checks/access-session.mjs')).href+'?'+Date.now());
 const session=auth.authenticatePresentation('resident',' ANA@IMPERIUM.DEMO ','Imperium@2026');
 ok(session.residentIndex===0&&session.mode==='demo','presentation identity resolves unit');
+ok(auth.sessionForEnvironment(session,true)===undefined,'presentation identity cannot enter API environment');
+ok(auth.sessionForEnvironment(session,false,'Configuration invalid')===undefined,'configuration error blocks saved presentation identity');
 assert.throws(()=>auth.authenticatePresentation('desk','ana@imperium.demo','Imperium@2026'));checks++;
 assert.throws(()=>auth.authenticatePresentation('resident','ana@imperium.demo','wrong'));checks++;
 ok(!auth.validPresentationSession({...session,expiresAt:Date.now()-1},'resident'),'expired presentation session rejected');
