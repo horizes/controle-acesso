@@ -42,7 +42,7 @@ export function transitionVisit(state:DemoState,visitId:string,status:Visit['sta
  if(!transitions[v.status].includes(status))throw Error('Esta visita já foi atualizada.');
  v.status=status;if(status==='No condomínio')v.enteredAt=new Date().toISOString();if(status==='Finalizado')v.exitedAt=new Date().toISOString();
  if(status==='Autorizado'){
-  const known=next.credentials.find(c=>c.name.toLowerCase()===v.name.toLowerCase()&&c.profile!=='Morador');
+  const known=next.credentials.find(c=>c.sourceVisitId===v.id&&c.unit===v.unit&&c.profile!=='Morador');
   if(known&&(!known.revoked&&new Date(known.validFrom)<=new Date()&&new Date(known.validUntil)>new Date())){/* Keep an invitation that is already valid. */}
   else if(known){known.validFrom=new Date().toISOString();known.validUntil=new Date(Date.now()+2*3600000).toISOString();known.revoked=false;known.sourceVisitId=v.id;known.unit=v.unit;known.code='IP-'+id('v').slice(-8).toUpperCase();next.invites=next.invites.map(i=>i.credentialId===known.id?{...i,cancelled:true}:i);}
   else next.credentials.push({id:id('c'),name:v.name,unit:v.unit,profile:v.type==='Prestador'?'Prestador':'Visitante',code:'IP-'+id('v').slice(-8).toUpperCase(),validFrom:new Date().toISOString(),validUntil:new Date(Date.now()+2*3600000).toISOString(),revoked:false,gates:['social'],sourceVisitId:v.id});
@@ -52,14 +52,16 @@ export function transitionVisit(state:DemoState,visitId:string,status:Visit['sta
 }
 export function addParcel(state:DemoState,data:Omit<Parcel,'id'|'status'|'createdAt'>){if(!data.name.trim()||!data.unit||!data.carrier.trim()||!data.location.trim()||data.volumes<1||data.volumes>99)throw Error('Informe destinatário, unidade, transportadora e local.');const next=structuredClone(state);next.parcels.unshift({...data,id:id('p'),status:'Na portaria',createdAt:new Date().toISOString()});event(next,'Encomenda recebida',data.name+' · '+data.carrier+' · '+data.unit,'parcel');return next;}
 export function withdrawParcel(state:DemoState,parcelId:string,receivedBy:string){const next=structuredClone(state),p=next.parcels.find(p=>p.id===parcelId);if(!p||p.status!=='Na portaria')throw Error('Esta encomenda já foi retirada.');if(receivedBy.trim().length<2)throw Error('Informe quem recebeu a encomenda.');p.status='Retirada';p.receivedBy=receivedBy.trim();p.withdrawnAt=new Date().toISOString();event(next,'Encomenda retirada',p.name+' · Retirada por '+p.receivedBy,'parcel');return next;}
-export function addInvite(state:DemoState,data:Omit<Invite,'id'|'code'|'credentialId'|'cancelled'> & {plate?:string}){
+export function addInvite(state:DemoState,data:Omit<Invite,'id'|'code'|'credentialId'|'cancelled'> & {plate?:string;renewCredentialId?:string}){
  if(data.name.trim().length<2||!data.unit)throw Error('Informe o visitante e a unidade.');
  if(!Number.isFinite(new Date(data.startsAt).getTime())||!Number.isFinite(new Date(data.endsAt).getTime())||new Date(data.endsAt)<=new Date(data.startsAt))throw Error('A validade final precisa ser posterior ao início.');
  if(data.plate&&!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(normalizePlate(data.plate)))throw Error('Confira a placa: use o padrão ABC1234 ou ABC1D23.');
- const next=structuredClone(state),code='IP-'+Math.random().toString(36).slice(2,8).toUpperCase(),credentialId=id('c');
- const known=next.credentials.find(c=>c.name.toLowerCase()===data.name.trim().toLowerCase());
- // An existing biometric identifier stays unique: a new timed grant replaces
- // the previous visitor grant. No face images or templates are collected here.
+ const next=structuredClone(state),code='IP-'+Math.random().toString(36).slice(2,8).toUpperCase();
+ const known=data.renewCredentialId?next.credentials.find(c=>c.id===data.renewCredentialId):undefined;
+ if(data.renewCredentialId&&(!known||known.unit!==data.unit||known.name.trim().toLowerCase()!==data.name.trim().toLowerCase()))throw Error('O cadastro selecionado não pertence à pessoa e unidade informadas.');
+ const credentialId=known?.id||id('c');
+ // Reuse an explicitly selected identity, keeping its equipment bindings stable.
+ // A matching name never transfers another person's biometric identifier.
  if(known&&known.profile==='Morador')throw Error('Esta pessoa já possui cadastro de morador.');
  if(known){next.credentials=next.credentials.filter(c=>c.id!==known.id);next.invites=next.invites.map(i=>i.credentialId===known.id?{...i,cancelled:true}:i);}
  const invitation:Invite={id:id('i'),name:data.name.trim(),unit:data.unit,host:data.host,type:data.type,startsAt:data.startsAt,endsAt:data.endsAt,code,credentialId,cancelled:false};

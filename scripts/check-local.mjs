@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {mkdtempSync,readFileSync,readdirSync} from 'node:fs';
+import path from 'node:path';
+import {randomUUID,createHash} from 'node:crypto';
+import {LocalStore} from '../local/store.mjs';
+import {createHandler} from '../local/build/api.mjs';
+import {startLocal} from '../local/server.mjs';
+import {GatewayClient} from '../gateway/client.mjs';
+
+const dir=mkdtempSync(path.resolve('.checks/local-')),file=path.join(dir,'state.sqlite'),password='Somente-Teste-Local-2026';
+const realFetch=globalThis.fetch;let external=0,checks=0;
+globalThis.fetch=(input,options)=>{const url=new URL(typeof input==='string'?input:input.url);if(!['127.0.0.1','localhost'].includes(url.hostname)){external++;throw Error('Internet bloqueada neste teste.');}return realFetch(input,options)};
+const ok=(value,message)=>{assert.ok(value,message);checks++};
+let store=new LocalStore(file),app;
+try{
+ const admin=await store.initialize({condominium:'Condomínio de teste local',name:'Administrador Teste',email:'admin@local.test',password}),member=await store.member(admin.id);
+ const handler=createHandler({store,allowedOrigins:['http://localhost:8789'],localAccounts:store.localAccounts()});
+ async function request(route,{token,body,method=body?'POST':'GET'}={}){const response=await handler(new Request('http://localhost:8789/api'+route,{method,headers:{Origin:'http://localhost:8789',...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})}));return {status:response.status,data:response.status===204?null:await response.json()}}
+ const login=async(email,role='desk')=>request('/v1/auth/login',{body:{email,password,role}});
+ const auth=await login(admin.email);ok(auth.status===200&&auth.data.user.capabilities.admin,'login local de administrador sem nuvem');const token=auth.data.accessToken;
+ const resident=await request('/v1/admin/local-accounts',{token,body:{name:'Morador Um',email:'morador@local.test',password,role:'resident',unit:'101',canRelease:false}});ok(resident.status===201,'criação local de morador');
+ const desk=await request('/v1/admin/local-accounts',{token,body:{name:'Porteiro Um',email:'portaria@local.test',password,role:'desk',unit:null,canRelease:false}});ok(desk.status===201,'criação local de porteiro');
+ const second=await request('/v1/admin/local-accounts',{token,body:{name:'Morador Dois',email:'outro@local.test',password,role:'resident',unit:'202',canRelease:false}});ok(second.status===201,'segunda unidade local');
+ const residentAuth=await login('morador@local.test','resident'),residentToken=residentAuth.data.accessToken;ok(residentAuth.status===200,'morador autentica sem email externo');
+ ok((await request('/v1/admin/local-accounts',{token:residentToken,body:{name:'Intruso'}})).status===403,'morador não cria usuários');
+ const command=(type,payload,requestId=randomUUID())=>({type,payload,requestId});
+ let result=await request('/v1/commands',{token,body:command('parcel.receive',{name:'Morador Um',unit:'101',carrier:'Entrega local',tracking:'TESTE',location:'Estante 1',volumes:1})});ok(result.status===200&&result.data.parcels.length===1,'encomenda salva sem internet');
+ const otherAuth=await login('outro@local.test','resident');ok((await request('/v1/state',{token:otherAuth.data.accessToken})).data.parcels.length===0,'separação de unidades');
+ const invitePayload={name:'Visitante Local',unit:'101',host:'Morador Um',type:'Visita',startsAt:new Date(Date.now()-60000).toISOString(),endsAt:new Date(Date.now()+3600000).toISOString(),plate:'ABC1D23'};
+ result=await request('/v1/commands',{token:residentToken,body:command('invite.create',invitePayload)});ok(result.status===200,'convite local com placa');const invite=result.data.invites[0],credentialId=invite.credentialId;
+ await store.commit(member.condominium_id,(await store.state(member.condominium_id)).revision,{...result.data,credentials:result.data.credentials.map(c=>c.id===credentialId?{...c,faceRef:'face-local'}:c)},'test',randomUUID(),'seed-face');
+ const gatewayToken='acgw_'+('ab'.repeat(32)),[gateway]=await store.insert('ac_gateways',{condominium_id:member.condominium_id,name:'Gateway de teste',token_hash:createHash('sha256').update(gatewayToken).digest('hex'),enabled:true});
+ await store.insert('ac_devices',{id:'social-local',condominium_id:member.condominium_id,gateway_id:gateway.id,name:'Leitor teste',provider:'controlid',model:'Fixture',gate:'social',methods:['face','plate'],mode:'online',enabled:true,commissioned:true,actuator_id:null});
+ await store.insert('ac_bindings',{device_id:'social-local',method:'face',external_id:'pessoa-1',credential_id:credentialId,condominium_id:member.condominium_id});
+ const gw=new GatewayClient('http://127.0.0.1:8789/api',gatewayToken,async(url,options)=>handler(new Request(url,options)));
+ const decision=await gw.post('/v1/gateway/identify',{eventId:'face-1',deviceId:'social-local',method:'face',identifier:'pessoa-1',purpose:'authorization-request'});ok(decision.allowed,'identificação facial autoriza localmente');
+ const repeated=await gw.post('/v1/gateway/identify',{eventId:'face-1',deviceId:'social-local',method:'face',identifier:'pessoa-1',purpose:'authorization-request'});ok(!repeated.allowed&&repeated.duplicate,'evento repetido não libera novamente');
+ const renewed=await request('/v1/commands',{token:residentToken,body:command('invite.create',{...invitePayload,renewCredentialId:credentialId})});ok(renewed.status===200&&renewed.data.invites[0].credentialId===credentialId,'renovação preserva identidade e vínculo facial');
+ ok((await gw.post('/v1/gateway/identify',{eventId:'face-renovada',deviceId:'social-local',method:'face',identifier:'pessoa-1',purpose:'authorization-request'})).allowed,'face continua válida depois da renovação');
+ const cross=await request('/v1/commands',{token:otherAuth.data.accessToken,body:command('invite.create',{...invitePayload,unit:'202',host:'Morador Dois',renewCredentialId:credentialId})});ok(cross.status===409,'outro apartamento não renova identidade alheia');
+ const sameName=await request('/v1/commands',{token:otherAuth.data.accessToken,body:command('invite.create',{...invitePayload,unit:'202',host:'Morador Dois',plate:undefined})});ok(sameName.status===200&&sameName.data.credentials.every(c=>!c.faceRef),'nome igual não herda biometria');
+ const manual=await request('/v1/gates/release',{token,body:{deviceId:'social-local',reason:'Liberação supervisionada de teste',requestId:randomUUID()}});ok(manual.status===202,'comando manual é enfileirado localmente');
+ const jobs=await gw.post('/v1/gateway/poll');ok(jobs.jobs.length===1,'gateway obtém comando local');
+ await gw.post('/v1/gateway/ack',{jobId:jobs.jobs[0].id,leaseId:jobs.jobs[0].leaseId,status:'unknown'});ok((await gw.post('/v1/gateway/poll')).jobs.length===0,'resultado indeterminado não é repetido');
+ const cancelled=await request('/v1/commands',{token:residentToken,body:command('invite.cancel',{id:renewed.data.invites[0].id})});ok(cancelled.status===200,'cancelamento persistido localmente');
+ ok(!(await gw.post('/v1/gateway/identify',{eventId:'face-cancelada',deviceId:'social-local',method:'face',identifier:'pessoa-1',purpose:'authorization-request'})).allowed,'cancelamento impede nova liberação');
+ const snapshot=await store.state(member.condominium_id);await assert.rejects(store.commit(member.condominium_id,snapshot.revision-1,snapshot.body,'test',randomUUID(),'wrong-rev'),/REVISION_CONFLICT/);checks++;
+ await store.backup(path.join(dir,'backup.sqlite'));const restored=new LocalStore(path.join(dir,'backup.sqlite'));ok((await restored.state(member.condominium_id)).body.parcels.length===1,'backup consistente recupera encomenda');restored.close();
+ store.close();store=new LocalStore(file);ok((await store.state(member.condominium_id)).body.parcels.length===1,'dados sobrevivem à reinicialização');ok((await store.authUser(token)).id===admin.id,'sessão persistente após reinício');
+ await store.revoke(token);await assert.rejects(store.authUser(token),/Sessão/);checks++;
+ await store.localAccounts().status(member,{userId:resident.data.id,enabled:false});await assert.rejects(store.authUser(residentToken),/Sessão/);checks++;
+ store.checkClock();const future=Date.now()+60000;store.db.prepare("UPDATE meta SET v=? WHERE k='clock'").run(String(future));assert.throws(()=>store.checkClock(),/Relógio/);checks++;store.db.prepare("UPDATE meta SET v=? WHERE k='clock'").run(String(Date.now()));
+ app=await startLocal({listenHost:'127.0.0.1',port:8789,origins:['http://127.0.0.1:8789','http://localhost:8789']},{store});
+ const web=await fetch('http://localhost:8789/');ok(web.status===200&&(await web.text()).includes('Imperium'),'site servido pelo computador local');
+ const runtime=await (await fetch('http://localhost:8789/runtime-config.js')).text();ok(runtime.includes('location.origin')&&!runtime.includes('supabase'),'interface aponta exclusivamente à API local');
+ ok((await fetch('http://localhost:8789/private/config.private.json')).status===404,'arquivos privados não são servidos');
+ const freshAuth=await (await fetch('http://localhost:8789/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json',Origin:'http://localhost:8789'},body:JSON.stringify({role:'desk',email:admin.email,password})})).json();ok(freshAuth.accessToken?.startsWith('aclocal_'),'login pelo servidor HTTP real');
+ const assets=readdirSync('local/build/web/assets');for(const name of assets.filter(n=>n.endsWith('.css'))){const css=readFileSync('local/build/web/assets/'+name,'utf8');ok(!css.includes('fonts.googleapis.com'),'CSS sem fonte externa');}
+ ok(external===0,'nenhuma conexão à internet em todo o fluxo');
+ console.log(`${checks} verificações locais passaram, com internet bloqueada no teste. Nenhum equipamento físico acionado.`);
+}finally{await app?.close();store.close();globalThis.fetch=realFetch;}

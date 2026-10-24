@@ -12,6 +12,9 @@ secrets
 **/*.private.*
 **/*.key
 **/*.pem
+**/*.pfx
+**/*.p12
+local/build
 **/*.sqlite*
 **/*.log
 **/secrets

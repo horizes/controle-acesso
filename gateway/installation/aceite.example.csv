@@ -1,5 +1,5 @@
 teste_id;equipamento_id;cenario;resultado_esperado;resultado_observado;horario;referencia_evento_comando;responsavel;aceite
-REDE-01;PREENCHER;VPN_ativa;Gateway_alcanca_apenas_IPs_portas_autorizados;;;;;PENDENTE
+REDE-01;PREENCHER;LAN_local_ou_VPN_remota;Gateway_alcanca_apenas_IPs_portas_autorizados;;;;;PENDENTE
 REDE-02;PREENCHER;Retorno_da_rede;IP_de_origem_e_rota_correspondem_ao_cadastro;;;;;PENDENTE
 LOCAL-01;PREENCHER;Acionamento_local_supervisionado;Somente_porta_correta_e_pulso_previsto;;;;;PENDENTE
 LOCAL-02;PREENCHER;Botoeira_sensor_emergencia;Funcionamento_conforme_projeto_eletrico;;;;;PENDENTE
@@ -14,5 +14,6 @@ ACE-07;PREENCHER;Evento_duplicado;Sem_segunda_autorizacao;;;;;PENDENTE
 ACE-08;PREENCHER;Perda_de_resposta;Indeterminado_sem_repeticao_automatica;;;;;PENDENTE
 ACE-09;PREENCHER;VPN_ou_API_indisponivel;Sem_nova_autorizacao_online_e_contingencia_validada;;;;;PENDENTE
 ACE-10;PREENCHER;Reinicio_gateway;Recibos_preservados_sem_repeticao;;;;;PENDENTE
-ACE-11;PREENCHER;Renovacao_de_convite_e_vinculo_facial;Identidade_unidade_e_vinculo_preservados_apos_ajuste_de_software;;;;;BLOQUEADO_AJUSTE
-ACE-12;PREENCHER;Homonomos_em_unidades_diferentes;Sem_substituir_credencial_de_outra_unidade_apos_ajuste_de_software;;;;;BLOQUEADO_AJUSTE
+ACE-11;PREENCHER;Renovacao_explicita_de_convite_e_vinculo_facial;Identidade_unidade_ID_e_vinculo_preservados;;;;;PENDENTE
+ACE-12;PREENCHER;Homonomos_em_unidades_diferentes;Sem_substituir_credencial_ou_herdar_face_por_nome;;;;;PENDENTE
+ACE-13;PREENCHER;WAN_desconectada_com_LAN_e_servidor_local_ativos;Login_cadastro_e_autorizacao_local_continuam_sem_nuvem;;;;;PENDENTE

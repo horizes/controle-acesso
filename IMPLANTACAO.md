@@ -1,5 +1,7 @@
 # Instalação · central remota Imperium
 
+> **Atualização de arquitetura:** o caminho escolhido é a [central local Windows ou Linux](./LOCAL.md), com autenticação, banco e decisões na LAN, sem internet na operação. Os procedimentos de VPS/VPN deste documento ficam como alternativa de conectividade remota; não são pré-requisito da versão local. Oracle e DigitalOcean não foram contratadas. As instruções por aparelho continuam exigindo adaptação à LAN e homologação presencial.
+
 Este guia reúne a instalação da central, VPN e os procedimentos individuais dos aparelhos. A seção **Instalação dos aparelhos** contém roteiros de VPS, roteador/switch, ligação ao portão/fechadura, Control iD, Intelbras, Hikvision, ZKTeco e Dahua, com exemplos privados, aceite e diagnóstico.
 
 ## Situação da entrega
@@ -515,7 +517,7 @@ sudo docker compose -f gateway/compose.example.yml logs --tail=50
 ### K. Pendências que impedem tratar o pacote como instalação concluída
 
 - **Modelo e pinagem:** nenhum aparelho físico foi informado/homologado. A ficha do modelo e os dois manuais da ligação são obrigatórios antes da intervenção elétrica.
-- **Convites e face:** a renovação atual procura credenciais pelo nome e pode substituir seu ID interno sem migrar o vínculo do leitor. Corrigir identidade/unidade e preservação do vínculo antes de liberar renovação facial ou uso com homônimos. Recriar cadastro no equipamento não é a correção desse fluxo de software.
+- **Convites e face — correção entregue:** a renovação exige selecionar a credencial anterior da mesma unidade e pessoa; seu ID e o vínculo do leitor são preservados. Homônimos não herdam identificadores. Fluxos cobertos por testes automatizados; o ensaio com o leitor real continua pendente.
 - **Callbacks Control iD:** firmwares que exijam endpoints além dos dois implementados precisam de adaptação e teste.
 - **Hikvision:** SDK oficial, dependências e binário ainda não foram fornecidos/compilados nesta entrega. Não há captura facial/ANPR implementada nesse caminho.
 - **ZKTeco:** existe atuação via CVSecurity; autorização facial/ANPR preventiva não está implementada.
@@ -531,7 +533,7 @@ sudo docker compose -f gateway/compose.example.yml logs --tail=50
 | Conexão TCP falha | Rotas, porta real, firewall, fonte/link | Restabelecer rede sem chamada de abertura |
 | Control iD não envia identificação | Pro, server_id, callback, origem, relógio, endpoints exigidos | Capturar metadados técnicos mínimos em ambiente privado e ajustar contrato |
 | Face identificada e negada | Vínculo externo, credencial vigente, unidade, acesso, prazo | Conferir IDs; não liberar por semelhança de nome |
-| Convite renovado perde face | ID de credencial substituído/vínculo antigo | Tratar a pendência de software; não contornar com liberação permanente |
+| Convite renovado perde face | Revisão instalada, seleção explícita da credencial e vínculo externo | Usar a versão corrigida, conferir o ID preservado e repetir o ensaio supervisionado |
 | Intelbras rejeita comando | Digest, permissão, canal e contrato da versão | Validar com o fabricante antes de alterar adaptador |
 | ANPR observa mas não libera | nativeAutomaticOpeningDisabled, finalidade, UTC/RecNo, actuatorId | Comprovar configuração e evento; não forçar abertura nativa |
 | Hikvision indisponível | Arquitetura, bibliotecas, permissão do serviço, SDK/porta/canal | Corrigir instalação da ponte sem executar abertura direta |

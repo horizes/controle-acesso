@@ -2,6 +2,8 @@
 
 Endpoint implantado: https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api
 
+Na versão local, a mesma API é servida pelo computador do condomínio em `https://IP_LOCAL:8443/api`, com contas e SQLite próprios. Ela não consulta o Supabase. A instalação, HTTPS e backup estão em [LOCAL.md](./LOCAL.md). HTTP é permitido somente em loopback para preparação inicial.
+
 O projeto Supabase é compartilhado com outra aplicação. Somente objetos ac_* e a Edge Function access-api pertencem a este sistema. Tabelas têm RLS e privilégios diretos revogados de anon/authenticated. A API valida usuário, condomínio, perfil e unidade com a chave de serviço do ambiente da função. O aviso informativo de RLS sem políticas é esperado no acesso exclusivo pelo servidor. [Referência Supabase](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 
 ## Interface e autenticação
@@ -19,6 +21,8 @@ runtime-config.js contém somente endereços públicos. apiBaseUrl vazio mantém
 | POST /v1/gates/release | Admin/portaria com can_release | {deviceId, reason, requestId: UUID} |
 
 Login retorna accessToken, expiresAt e user com perfil, nome, e-mail, unidade e capacidades. Cada requisição valida Supabase Auth e vínculo atual. Token fica em memória; recarregar requer novo login. Não há refresh token no cliente. CORS permite https://horizes.github.io; origem não substitui autenticação.
+
+No servidor local, senhas são verificadas com scrypt e salt individual; sessões opacas expiram em oito horas e somente seu hash é persistido. Logout e desativação revogam sessões. Origem e Host são limitados à rede privada configurada. O navegador usa API da mesma origem e não alterna para a nuvem em caso de falha.
 
 Comandos: visit.create, visit.transition, parcel.receive, parcel.withdraw, invite.create, invite.cancel, booking.create, booking.cancel, request.create e request.resolve. Payloads no OpenAPI. Unidade, horários, permissões e transições são verificados no servidor; o navegador não escreve o estado completo. Morador recebe só sua unidade. Os espaços de reserva desta versão são Salão de festas, Churrasqueira e Espaço gourmet; adaptar antes de oferecer reservas reais.
 
@@ -43,6 +47,10 @@ provider: controlid/intelbras/hikvision/zkteco/dahua/generic. methods: face/plat
 Para usuários, criar/convidar a conta pelo fluxo de identidade escolhido no Supabase, confirmar e-mail e copiar o UUID de Authentication → Users. Vincular como resident (unidade obrigatória) ou desk. Não se pode mover conta de outro condomínio ou alterar o próprio vínculo nesta rota. Auth é compartilhado; ac_memberships é exclusivo deste aplicativo. Não há envio de convites/e-mail pelo painel de acesso.
 
 faceRef é referência interna, sem foto/template. Após cadastrar face no leitor, bindings associa seu ID externo à credencial. A tela Autorizações exibe o ID da credencial e permite bloqueio pelo administrador. Renovação de convite reaproveita cadastro anterior segundo as regras, com nova validade.
+
+`invite.create` aceita `renewCredentialId` somente para a mesma pessoa e unidade. Esse vínculo explícito preserva o ID e a associação facial. Coincidência de nomes não transfere identidade, biometria ou credencial.
+
+Somente na instalação local, `POST /v1/admin/local-accounts` cria usuário com `{email, password, name, role, unit, canRelease}` e `POST /v1/admin/local-account-status` habilita/desabilita com `{userId, enabled}`. Exigem administrador autenticado; senha mínima de 12 caracteres. `/v1/integrations` identifica `localAccounts: true` e inclui os usuários administráveis. Essas rotas não estão disponíveis na Edge Function online.
 
 ## Gateway
 

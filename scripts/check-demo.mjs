@@ -25,14 +25,14 @@ ok(!engine.evaluateAccess(s.credentials,{method:'plate',value:'???',gate:'garage
 ok(!engine.evaluateAccess(s.credentials,{method:'code',value:c.code,gate:'social',at:'invalid'}).allowed,'invalid timestamp rejected');
 ok(!engine.evaluateAccess(s.credentials,{method:'face',value:'FACE-MARIANA',gate:'social'}).allowed,'previous visit is expired');
 s=model.transitionVisit(s,'v1','Autorizado');
-ok(engine.evaluateAccess(s.credentials,{method:'face',value:'FACE-MARIANA',gate:'social'}).allowed,'resident approval reuses registered face');
-const granted=s.credentials.find(c=>c.faceRef==='FACE-MARIANA');
+ok(!engine.evaluateAccess(s.credentials,{method:'face',value:'FACE-MARIANA',gate:'social'}).allowed,'approval never transfers biometric identity by name');
+const granted=s.credentials.find(c=>c.sourceVisitId==='v1');
 ok(new Date(granted.validUntil)-new Date(granted.validFrom)<=7200001,'manual approval limited to two hours');
 assert.throws(()=>model.transitionVisit(s,'v1','Finalizado'));checks++;
 s=model.transitionVisit(s,'v1','No condomínio');s=model.transitionVisit(s,'v1','Finalizado');
 ok(!engine.evaluateAccess(s.credentials,{method:'face',value:'FACE-MARIANA',gate:'social'}).allowed,'exit revokes visit-scoped grant');
 ok(JSON.stringify(model.createDemo(new Date('2026-11-01T12:00:00Z')))!==before,'seed clock is explicit');
-let renewed=model.addInvite(s,{name:'Rafael Almeida',unit:'304 · Torre B',host:'Bruno Santos',type:'Serviço',startsAt:new Date(Date.now()-60000).toISOString(),endsAt:new Date(Date.now()+3600000).toISOString()});
+let renewed=model.addInvite(s,{name:'Rafael Almeida',unit:'304 · Torre B',host:'Bruno Santos',type:'Serviço',renewCredentialId:'c-rafael',startsAt:new Date(Date.now()-60000).toISOString(),endsAt:new Date(Date.now()+3600000).toISOString()});
 s=renewed.state;ok(s.credentials.filter(c=>c.faceRef==='FACE-RAFAEL').length===1,'renewal preserves unique face reference');
 ok(engine.evaluateAccess(s.credentials,{method:'face',value:'FACE-RAFAEL',gate:'social'}).allowed,'renewed temporal grant');
 s=model.cancelInvite(s,renewed.invite.id);ok(!engine.evaluateAccess(s.credentials,{method:'code',value:renewed.invite.code,gate:'social'}).allowed,'cancellation revokes code');

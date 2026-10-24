@@ -1,7 +1,7 @@
 import type {AccessRole, AccessSession} from './access-session';
 import {DemoState, isDemoState} from './demo-model';
 
-export type RuntimeConfig = {apiBaseUrl?:string; operationalApiBaseUrl?:string; requestTimeoutMs?:number; refreshIntervalMs?:number};
+export type RuntimeConfig = {apiBaseUrl?:string; operationalApiBaseUrl?:string; requestTimeoutMs?:number; refreshIntervalMs?:number;localMode?:boolean};
 export type ApiCommand = {type:string;payload:Record<string,unknown>;requestId:string};
 export type DirectoryPerson = {name:string;unit:string;initials:string};
 export type ConnectedState = DemoState & {residents:DirectoryPerson[];condominiumName?:string};
@@ -9,7 +9,8 @@ declare global {interface Window {IMPERIUM_CONFIG?:RuntimeConfig}}
 
 export function normalizeApiUrl(value:string):string {
   const url=new URL(value);
-  if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)throw Error('A API deve usar HTTPS, sem senha, parâmetros ou fragmentos no endereço.');
+  const loopback=url.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(url.hostname);
+  if(url.protocol!=='https:'&&!loopback||url.username||url.password||url.search||url.hash)throw Error('A API deve usar HTTPS. HTTP é permitido apenas no próprio computador.');
   return url.href.replace(/\/$/,'');
 }
 export function createConfiguredApi():CondominiumApi|null {
@@ -64,7 +65,7 @@ export class CondominiumApi {
 }
 
 export type IntegrationDevice={id:string;name:string;provider:string;model:string;gate:string;gateway_id:string;enabled:boolean;commissioned:boolean;mode:string};
-export type IntegrationState={devices:IntegrationDevice[];gateways:{id:string;name:string;enabled:boolean;last_seen:string|null}[];jobs:{id:string;device_id:string;gate:string;status:string;created_at:string}[];admin:boolean;canRelease:boolean};
+export type IntegrationState={devices:IntegrationDevice[];gateways:{id:string;name:string;enabled:boolean;last_seen:string|null}[];jobs:{id:string;device_id:string;gate:string;status:string;created_at:string}[];admin:boolean;canRelease:boolean;localAccounts?:boolean;members?:{user_id:string;name:string;email:string;role:string;unit:string|null;enabled:boolean}[]};
 
 // Convert the existing UI actions into semantic commands. The API must repeat
 // all validation and enforce the authenticated person's role and unit.
@@ -79,7 +80,7 @@ export function commandFromChange(before:DemoState,after:DemoState):ApiCommand {
   const withdrawn=after.parcels.find(p=>before.parcels.some(v=>v.id===p.id&&v.status!==p.status));
   if(withdrawn)return make('parcel.withdraw',{id:withdrawn.id,receivedBy:withdrawn.receivedBy});
   const invite=after.invites.find(i=>!before.invites.some(v=>v.id===i.id));
-  if(invite)return make('invite.create',{name:invite.name,unit:invite.unit,host:invite.host,type:invite.type,startsAt:invite.startsAt,endsAt:invite.endsAt,plate:after.credentials.find(c=>c.id===invite.credentialId)?.plate});
+  if(invite)return make('invite.create',{name:invite.name,unit:invite.unit,host:invite.host,type:invite.type,startsAt:invite.startsAt,endsAt:invite.endsAt,plate:after.credentials.find(c=>c.id===invite.credentialId)?.plate,...(before.credentials.some(c=>c.id===invite.credentialId)?{renewCredentialId:invite.credentialId}:{})});
   const cancelled=after.invites.find(i=>i.cancelled&&!before.invites.find(v=>v.id===i.id)?.cancelled);
   if(cancelled)return make('invite.cancel',{id:cancelled.id});
   const booking=after.bookings.find(b=>!before.bookings.some(v=>v.id===b.id));

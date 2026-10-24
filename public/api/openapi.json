@@ -3,7 +3,7 @@
   "info": {
     "title": "Imperium Controle de Acesso",
     "version": "2.0.0",
-    "description": "API implantada. Autenticação própria Supabase Auth e gateway HMAC; equipamentos exigem homologação."
+    "description": "API online com Supabase Auth ou instalação local com contas próprias; gateway HMAC. Equipamentos exigem homologação."
   },
   "security": [
     {
@@ -960,6 +960,132 @@
           }
         }
       }
+    },
+    "/v1/admin/local-accounts": {
+      "post": {
+        "summary": "Somente local e administrador: criar usuário",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 256
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "enum": [
+                      "desk",
+                      "resident"
+                    ]
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "canRelease": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "name",
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sucesso; ver API.md para campos e restrições"
+          },
+          "400": {
+            "description": "Corpo inválido"
+          },
+          "401": {
+            "description": "Autenticação inválida"
+          },
+          "403": {
+            "description": "Sem permissão"
+          },
+          "409": {
+            "description": "Conflito/repetição ou equipamento indisponível"
+          }
+        },
+        "x-local-only": true
+      }
+    },
+    "/v1/admin/local-account-status": {
+      "post": {
+        "summary": "Somente local e administrador: habilitar ou desabilitar usuário",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "userId",
+                  "enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso; ver API.md para campos e restrições"
+          },
+          "400": {
+            "description": "Corpo inválido"
+          },
+          "401": {
+            "description": "Autenticação inválida"
+          },
+          "403": {
+            "description": "Sem permissão"
+          },
+          "409": {
+            "description": "Conflito/repetição ou equipamento indisponível"
+          }
+        },
+        "x-local-only": true
+      }
     }
   },
   "components": {
@@ -1708,6 +1834,10 @@
                   },
                   "plate": {
                     "type": "string"
+                  },
+                  "renewCredentialId": {
+                    "type": "string",
+                    "description": "ID do cadastro anterior da mesma pessoa/unidade; preserva vínculos faciais."
                   }
                 },
                 "required": [
@@ -1908,7 +2038,12 @@
   },
   "servers": [
     {
-      "url": "https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api"
+      "url": "https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api",
+      "description": "Testes online existentes"
+    },
+    {
+      "url": "https://127.0.0.1:8443/api",
+      "description": "Instalação local; substituir pelo endereço HTTPS privado configurado"
     }
   ]
 }

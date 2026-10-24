@@ -2,7 +2,7 @@
 
 **Situação: configuração preparada; VPS ainda não criada ou contratada.** Este pacote não faz compras nem exige token de hospedagem. A criação depende da conta do provedor e da autorização do custo.
 
-**Escolha atual do proprietário: tentar a Oracle Cloud gratuita.** Use o [procedimento Oracle Always Free](./ORACLE.md) e o gerador com `--provider oracle`. A proposta DigitalOcean abaixo fica apenas como referência; não foi contratada. O perfil Oracle preserva o firewall da imagem e não habilita UFW.
+**Referência opcional arquivada.** A escolha atual é testar com GitHub Pages/Supabase existentes e instalar o pacote [local Windows/Linux](../../LOCAL.md), sem cadastro de cartão nem contratação de hospedagem. A tentativa Oracle foi abandonada pelo requisito de pagamento. Os procedimentos abaixo ficam como referência para uma decisão futura; não são necessários à operação local.
 
 ## Proposta para o piloto
 
@@ -56,7 +56,7 @@ Somente considerar o host preparado se cloud-init terminou sem erro, o marcador 
 2. Para verificar a comunicação sem acionar equipamentos, executar `sudo docker compose -p imperium -f /etc/imperium/compose.json up -d`. Confirmar gateway online no painel e logs sem erros de autenticação. Conservar `physicalEnabled: false` e `IMPERIUM_ENABLE_PHYSICAL=no`.
 3. Identificar redes, roteador, modelos e firmware. Acrescentar peer/rotas estritas ao WireGuard e configurar a outra ponta no roteador. Não alterar os IPs de exemplo sem verificar conflitos. Ver o manual de implantação.
 4. Quando necessários, configurar callbacks para ouvir apenas no IP VPN. Adicionar regras UFW somente na interface `wg-imperium`, de IPs específicos dos equipamentos para `10.200.0.1:8765`. Não abrir 8765 na internet. Habilitar VPN com `sudo systemctl enable --now wg-quick@wg-imperium` depois de revisar peers/rotas.
-5. Cadastrar e homologar cada aparelho conforme o manual. Corrigir e testar os bloqueios de renovação/identidade de visitantes descritos nele antes do piloto. Habilitar operação física apenas no aceite presencial.
+5. Cadastrar e homologar cada aparelho conforme o manual. Testar renovação explícita de credenciais e isolamento de identidade/unidade no equipamento real. Habilitar operação física apenas no aceite presencial.
 
 O diário de comandos fica no volume Docker `imperium_imperium-journal`. Nunca remover esse volume para repetir comandos. Definir e testar backup/recuperação antes de operação com moradores reais. A VPS ainda depende de internet, energia e roteador VPN no condomínio. Não há câmera ou portão homologado, redundância ou teste físico incluído nesta preparação.
 

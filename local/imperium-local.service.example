@@ -1,0 +1,21 @@
+[Unit]
+Description=Imperium - central local do condominio
+After=network.target
+
+[Service]
+Type=simple
+User=imperium
+Group=imperium
+WorkingDirectory=/opt/imperium/controle-acesso
+ExecStart=/opt/imperium/node/bin/node /opt/imperium/controle-acesso/local/server.mjs /opt/imperium/controle-acesso/private/config.private.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/imperium/controle-acesso/private
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 # Imperium na Oracle Cloud gratuita
 
-**Escolha atual: tentar Oracle Always Free. VPS ainda não criada; falta autenticação do titular e verificação da cota disponível.** A proposta paga da DigitalOcean não foi contratada.
+**Referência arquivada: tentativa abandonada pelo requisito de cartão/pagamento no cadastro. Nenhuma VPS foi criada.** A instalação escolhida é o [pacote local Windows/Linux](../../LOCAL.md); testes online continuam nos serviços já existentes. Este procedimento é opcional e não autoriza contratação ou cadastro financeiro.
 
 ## Configuração para o primeiro piloto
 

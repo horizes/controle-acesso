@@ -37,7 +37,7 @@ export function applyCommand(state:State,member:Member,command:Command,directory
       if(member.role==='resident'&&!['Autorizado','Recusado'].includes(String(p.status)))throw new HttpError(403,'O morador pode autorizar ou recusar a própria visita.');
       if(!['Autorizado','Recusado','No condomínio','Finalizado'].includes(String(p.status)))throw new HttpError(400,'Transição inválida.');
       if(p.status==='No condomínio'){
-        const credential=state.credentials.find(c=>c.sourceVisitId===visit.id)||state.credentials.find(c=>c.name.toLowerCase()===visit.name.toLowerCase()&&c.unit===unit&&c.profile!=='Morador');
+        const credential=state.credentials.find(c=>c.sourceVisitId===visit.id&&c.unit===unit);
         if(!credential||!evaluateAccess([credential],{method:'code',value:credential.code||'',gate:'social'}).allowed)throw new HttpError(409,'A autorização da visita não está válida.');
       }
       next=transitionVisit(state,visit.id,p.status as Visit['status']) as State;
@@ -52,10 +52,10 @@ export function applyCommand(state:State,member:Member,command:Command,directory
       requireDesk(member);exactKeys(p,['id','receivedBy']);const parcel=state.parcels.find(v=>v.id===p.id);if(!parcel)throw new HttpError(404,'Encomenda não encontrada.');unit=parcel.unit;next=withdrawParcel(state,parcel.id,text(p.receivedBy,'receivedBy',100,2)) as State;break;
     }
     case 'invite.create':{
-      exactKeys(p,['name','unit','host','type','startsAt','endsAt','plate'],['name','unit','host','type','startsAt','endsAt']);unit=inDirectory(p.unit);requireUnit(member,unit);const host=member.role==='resident'?member.name:text(p.host,'host',100);
+      exactKeys(p,['name','unit','host','type','startsAt','endsAt','plate','renewCredentialId'],['name','unit','host','type','startsAt','endsAt']);unit=inDirectory(p.unit);requireUnit(member,unit);const host=member.role==='resident'?member.name:text(p.host,'host',100);
       if(!directory.some(r=>r.unit===unit&&r.name===host)||!['Visita','Serviço'].includes(String(p.type)))throw new HttpError(400,'Responsável ou finalidade inválidos.');
       const start=iso(p.startsAt,'startsAt'),end=iso(p.endsAt,'endsAt');if(Date.parse(end)<=Date.now()||Date.parse(end)-Date.parse(start)>366*86400000)throw new HttpError(400,'Prazo de autorização inválido.');
-      const result=addInvite(state,{name:text(p.name,'name',100,2),unit,host,type:p.type as 'Visita'|'Serviço',startsAt:start,endsAt:end,plate:p.plate?text(p.plate,'plate',20):undefined});next=result.state as State;const code=opaqueCode();next.invites.find(i=>i.id===result.invite.id)!.code=code;next.credentials.find(c=>c.id===result.invite.credentialId)!.code=code;break;
+      const result=addInvite(state,{name:text(p.name,'name',100,2),unit,host,type:p.type as 'Visita'|'Serviço',startsAt:start,endsAt:end,plate:p.plate?text(p.plate,'plate',20):undefined,renewCredentialId:p.renewCredentialId?text(p.renewCredentialId,'renewCredentialId',100):undefined});next=result.state as State;const credential=next.credentials.find(c=>c.id===result.invite.credentialId)!;if(credential.plate&&next.credentials.some(c=>c.id!==credential.id&&c.plate===credential.plate))throw new HttpError(409,'Placa já vinculada a outro cadastro.');const code=opaqueCode();next.invites.find(i=>i.id===result.invite.id)!.code=code;credential.code=code;break;
     }
     case 'invite.cancel':{
       exactKeys(p,['id']);const invite=state.invites.find(v=>v.id===p.id);if(!invite)throw new HttpError(404,'Convite não encontrado.');unit=invite.unit;requireUnit(member,unit);next=cancelInvite(state,invite.id) as State;break;

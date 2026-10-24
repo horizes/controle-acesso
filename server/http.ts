@@ -1,9 +1,9 @@
 import {applyCommand,audit,createCredential,emptyState,exactKeys,HttpError,iso,opaqueCode,requireAdmin,requireDesk,scopedState,text,uuid,type Member,type Device,type Command} from './domain';
-import {SupabaseStore,sha256} from './store';
+import {sha256,type AccessStore} from './store';
 import {evaluateAccess,normalizePlate} from '../src/access-engine';
 import {verifyEquipmentSignature} from '../src/equipment-events';
 
-type Options={store:SupabaseStore;allowedOrigins:string[]};
+type Options={store:AccessStore;allowedOrigins:string[];localAccounts?:{create:(member:Member,data:Record<string,unknown>)=>Promise<unknown>;list:(member:Member)=>Promise<unknown>;status:(member:Member,data:Record<string,unknown>)=>Promise<unknown>}};
 const denied={allowed:false,reason:'Acesso não autorizado.',physicalState:'unknown'};
 function bearer(req:Request){const value=req.headers.get('authorization')||'';if(!value.startsWith('Bearer ')||value.length>6000)throw new HttpError(401,'Autenticação necessária.');return value.slice(7)}
 async function readBody(req:Request){
@@ -12,7 +12,7 @@ async function readBody(req:Request){
   if(reader)while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>32768){await reader.cancel();throw new HttpError(413,'Corpo muito grande.')}chunks.push(value)}
   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}const raw=new TextDecoder().decode(bytes);
   try{const data=JSON.parse(raw);if(!data||typeof data!=='object'||Array.isArray(data))throw Error();return {raw,data}}catch{throw new HttpError(400,'JSON inválido.')}}
-export function createHandler({store,allowedOrigins}:Options){return async(req:Request):Promise<Response>=>{
+export function createHandler({store,allowedOrigins,localAccounts}:Options){return async(req:Request):Promise<Response>=>{
   const origin=req.headers.get('origin');const headers:Record<string,string>={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Vary':'Origin'};
   if(origin&&allowedOrigins.includes(origin))Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization,content-type,x-gateway-signature','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Max-Age':'600'});
   const response=(body:unknown,status=200)=>new Response(status===204?null:JSON.stringify(body),{status,headers});
@@ -65,20 +65,22 @@ export function createHandler({store,allowedOrigins}:Options){return async(req:R
       throw new HttpError(404,'Rota de gateway não encontrada.');
     }
     const token=bearer(req),authUser=await store.authUser(token),member=await store.member(authUser.id);const directory=await store.directory(member.condominium_id);
-    if(req.method==='POST'&&path==='/v1/auth/logout'){const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));await store.revoke(token,new Date(claims.exp*1000).toISOString());return response(null,204);}
+    if(req.method==='POST'&&path==='/v1/auth/logout'){await store.revoke(token);return response(null,204);}
     if(req.method==='GET'&&path==='/v1/state'){const [condominium]=await store.select('ac_condominiums',{id:'eq.'+member.condominium_id},'name',1);return response({...scopedState((await store.state(member.condominium_id)).body,member,directory),condominiumName:condominium?.name||'Condomínio'});}
     if(req.method==='POST'&&path==='/v1/commands'){
       const {data}=await readBody(req);exactKeys(data,['type','requestId','payload']);uuid(data.requestId);const hash=await sha256(JSON.stringify(data));const prior=await store.select('ac_requests',{actor_id:'eq.user:'+member.user_id,request_id:'eq.'+data.requestId},'*',1);if(prior.length){if(prior[0].payload_hash!==hash)throw new HttpError(409,'IDEMPOTENCY_CONFLICT');return response(scopedState((await store.state(member.condominium_id)).body,member,directory));}
       for(let attempt=0;attempt<3;attempt++){const snapshot=await store.state(member.condominium_id),next=applyCommand(snapshot.body,member,data as Command,directory);try{const committed=await store.commit(member.condominium_id,snapshot.revision,next,'user:'+member.user_id,uuid(data.requestId),hash);return response(scopedState(committed.body,member,directory));}catch(e){if(!(e instanceof HttpError)||e.message!=='REVISION_CONFLICT'||attempt===2)throw e;}}
     }
     if(req.method==='GET'&&path==='/v1/integrations'){
-      requireDesk(member);const devices=await store.select('ac_devices',{condominium_id:'eq.'+member.condominium_id},'*',1000),gateways=await store.select('ac_gateways',{condominium_id:'eq.'+member.condominium_id},'id,name,enabled,last_seen',1000),jobs=await store.select('ac_jobs',{condominium_id:'eq.'+member.condominium_id,order:'created_at.desc'},'id,device_id,gate,status,created_at,completed_at,result',20);return response({devices,gateways,jobs,canRelease:member.role==='admin'||member.can_release,admin:member.role==='admin'});
+      requireDesk(member);const devices=await store.select('ac_devices',{condominium_id:'eq.'+member.condominium_id},'*',1000),gateways=await store.select('ac_gateways',{condominium_id:'eq.'+member.condominium_id},'id,name,enabled,last_seen',1000),jobs=await store.select('ac_jobs',{condominium_id:'eq.'+member.condominium_id,order:'created_at.desc'},'id,device_id,gate,status,created_at,completed_at,result',20);return response({devices,gateways,jobs,canRelease:member.role==='admin'||member.can_release,admin:member.role==='admin',localAccounts:!!localAccounts,...(localAccounts&&member.role==='admin'?{members:await localAccounts.list(member)}:{})});
     }
     if(req.method==='POST'&&path==='/v1/gates/release'){
       requireDesk(member);const {data}=await readBody(req);exactKeys(data,['deviceId','requestId','reason']);uuid(data.requestId);const reason=text(data.reason,'reason',300,8);const job=await store.rpc('ac_enqueue_job',{p_actor:member.user_id,p_device:text(data.deviceId,'deviceId',100),p_request:uuid(data.requestId),p_hash:await sha256(JSON.stringify(data)),p_reason:reason});return response({id:job.id,status:job.status,expiresAt:job.expires_at,physicalState:'unknown'},202);
     }
     if(path.startsWith('/v1/admin/')){
       requireAdmin(member);if(req.method!=='POST')throw new HttpError(405,'Método não permitido.');const {data}=await readBody(req);
+      if(path==='/v1/admin/local-accounts'&&localAccounts)return response(await localAccounts.create(member,data),201);
+      if(path==='/v1/admin/local-account-status'&&localAccounts)return response(await localAccounts.status(member,data));
       if(path==='/v1/admin/memberships'){
         exactKeys(data,['userId','role','name','unit','enabled','canRelease']);const userId=uuid(data.userId);if(userId===member.user_id)throw new HttpError(400,'O administrador não pode alterar o próprio vínculo por esta operação.');
         if(!['desk','resident'].includes(String(data.role))||typeof data.enabled!=='boolean'||typeof data.canRelease!=='boolean')throw new HttpError(400,'Vínculo inválido.');

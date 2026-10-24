@@ -1,7 +1,7 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 const file='public/api/openapi.json',api=JSON.parse(readFileSync(file,'utf8'));
-api.info={title:'Imperium Controle de Acesso',version:'2.0.0',description:'API implantada. Autenticação própria Supabase Auth e gateway HMAC; equipamentos exigem homologação.'};
-api.servers=[{url:'https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api'}];
+api.info={title:'Imperium Controle de Acesso',version:'2.0.0',description:'API online com Supabase Auth ou instalação local com contas próprias; gateway HMAC. Equipamentos exigem homologação.'};
+api.servers=[{url:'https://abweepruixcyetrzefhk.supabase.co/functions/v1/access-api',description:'Testes online existentes'},{url:'https://127.0.0.1:8443/api',description:'Instalação local; substituir pelo endereço HTTPS privado configurado'}];
 api.components.securitySchemes.gatewayToken={type:'http',scheme:'bearer',description:'Token exclusivo acgw_ do gateway'};
 api.components.securitySchemes.gatewayHmac={type:'apiKey',in:'header',name:'X-Gateway-Signature',description:'Hex HMAC-SHA256 sobre POST + newline + caminho lógico + newline + corpo original; chave = token do gateway'};
 const string={type:'string'},uuid={type:'string',format:'uuid'},bool={type:'boolean'},iso={type:'string',format:'date-time'};
@@ -19,6 +19,9 @@ const admin={
  'revoke-credential':object({id:string}),
  commission:object({deviceId:string,enabled:bool,commissioned:bool,gatewayEnabled:bool})
 };for(const [path,body]of Object.entries(admin))add('/v1/admin/'+path,'Somente administrador: '+path,body,api.security,['devices','gateways','credentials','bindings'].includes(path)?'201':'200');
+add('/v1/admin/local-accounts','Somente local e administrador: criar usuário',object({email:{type:'string',format:'email'},password:{type:'string',minLength:12,maxLength:256},name:string,role:{enum:['desk','resident']},unit:{type:['string','null']},canRelease:bool},['email','password','name','role']),api.security,'201');
+add('/v1/admin/local-account-status','Somente local e administrador: habilitar ou desabilitar usuário',object({userId:uuid,enabled:bool}));
+for(const path of ['/v1/admin/local-accounts','/v1/admin/local-account-status'])api.paths[path].post['x-local-only']=true;
 const base={requestId:uuid,sentAt:iso},security=[{gatewayToken:[],gatewayHmac:[]}];
 add('/v1/gateway/poll','Heartbeat e lease; nunca reenvia lease em timeout',object(base),security);
 add('/v1/gateway/ack','Confirma resultado sem afirmar posição física',object({...base,jobId:uuid,leaseId:uuid,status:{enum:['accepted','rejected','unknown']},vendorCode:string},['requestId','sentAt','jobId','leaseId','status']),security);
