@@ -23,6 +23,7 @@ const target={...reader,id:'act-social',watchEvents:false,recognitionMode:undefi
 const eventData={dateTime:date,eventType:'AccessControllerEvent',eventState:'active',ipAddress:reader.sourceIp,AccessControllerEvent:{majorEventType:5,subEventType:75,employeeNoString:'42',doorNo:1,serialNo:100}};
 const frame=JSON.stringify(eventData),event=hikvisionEvent(frame,reader,now);ok(event?.purpose==='authorization-request'&&event.identifier==='42','Hikvision face-only success maps employee ID');
 for(const changed of [{subEventType:76},{subEventType:1},{majorEventType:1},{doorNo:2},{employeeNoString:''},{serialNo:undefined}])ok(!hikvisionEvent(JSON.stringify({...eventData,AccessControllerEvent:{...eventData.AccessControllerEvent,...changed}}),reader,now),'Non-face, invalid ID or wrong door cannot authorize');
+ok(!hikvisionEvent(JSON.stringify({...eventData,AccessControllerEvent:{...eventData.AccessControllerEvent,employeeNoString:9007199254740992}}),reader,now),'Hikvision numeric ID outside safe integer range cannot alias another user');
 ok(!hikvisionEvent(frame,reader,now+6000),'Delayed recognition rejected');ok(!hikvisionEvent(JSON.stringify({...eventData,dateTime:new Date(now+3000).toISOString()}),reader,now),'Future camera time rejected');
 ok(!hikvisionEvent(JSON.stringify({...eventData,dateTime:date.slice(0,-1)}),reader,now),'Timezone is required');
 ok(hikvisionEvent(frame,{...reader,readerRelayIsolated:false},now)?.purpose==='observation','Unisolated reader is audit only');
@@ -41,6 +42,7 @@ const cgiFrame=JSON.stringify({UTC:Math.floor(now/1000),RecNo:17,Method:15,UserI
 ok(intelbrasEvent('Code=AccessControl;action=Pulse;index=0;data='+cgiFrame,reader,now)?.purpose==='authorization-request','CGI face-only recognition supports an isolated external actuator');
 ok(!intelbrasEvent('Code=AccessControl;data='+cgiFrame.replace('"Method":15','"Method":1'),reader,now),'CGI card event does not impersonate a face');
 ok(!intelbrasEvent('Code=AccessControl;data='+cgiFrame.replace('"Status":1','"Status":0'),reader,now),'CGI failed match does not authorize');
+ok(!intelbrasEvent('Code=AccessControl;data='+cgiFrame.replace('"UserID":"42"','"UserID":9007199254740992'),reader,now),'CGI numeric ID outside safe integer range cannot alias another user');
 ok(!intelbrasEvent('Code=TrafficJunction;action=Stop;data={}',camera,now),'CGI stop event is ignored');
 const parts=[];for await(const p of multipartText(Readable.from([Buffer.from('--b\r\nContent-Type: application/xml\r\n\r\n'+plateXml+'\r\n--b\r\nContent-Type: image/jpeg\r\n\r\nNOT-A-PHOTO\r\n--b--\r\n')]),'b'))parts.push(p);ok(parts.length===1&&parts[0]===plateXml,'Multipart XML accepted and image discarded');
 const signedDevice={...reader,provider:'generic',protocol:'signed-events',eventSecretEnv:'EVENT_SECRET'},raw=JSON.stringify({eventId:'capture-1',method:'face',identifier:'42',occurredAt:date});

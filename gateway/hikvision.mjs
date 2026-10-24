@@ -23,7 +23,8 @@ export function hikvisionEvent(frame,device,now=Date.now()){
   }
   if(data.eventType==='AccessControllerEvent'){
    const a=data.AccessControllerEvent;if(!a||Number(a.majorEventType)!==5||Number(a.subEventType)!==75)return null;
-   const user=String(a.employeeNoString??a.employeeNo??'');if(!user||user==='0'||user.length>120||!/^\d{1,20}$/.test(String(a.serialNo)))return null;
+   const rawUser=a.employeeNoString??a.employeeNo;if(typeof rawUser!=='string'&&!(typeof rawUser==='number'&&Number.isSafeInteger(rawUser)))return null;
+   const user=String(rawUser);if(!user||user==='0'||user.length>120||!/^\d{1,20}$/.test(String(a.serialNo)))return null;
    if(!Number.isSafeInteger(device.channel)||Number(a.doorNo)!==device.channel)return null;
    return {eventId:stable('face',[a.serialNo,data.dateTime,a.doorNo]),method:'face',identifier:user,purpose:externalFaceActuator(device)?'authorization-request':'observation'};
   }

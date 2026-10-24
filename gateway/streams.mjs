@@ -23,7 +23,8 @@ export function intelbrasEvent(frame,device,now=Date.now()){
     return {eventId:'anpr:'+device.id+':'+record+':'+timestamp,method:'plate',identifier:plate,purpose:device.nativeAutomaticOpeningDisabled===true?'authorization-request':'observation'};
   }
   if(code==='AccessControl'){
-    const user=String(data.UserID||line('Events[0].UserID')||''),method=Number(data.Method??line('Events[0].Method')),record=data.RecNo??line('Events[0].RecNo'),timestamp=Number(data.UTC??data.RealUTC??line('Events[0].UTC'))*1000;
+    const rawUser=data.UserID??line('Events[0].UserID');if(typeof rawUser!=='string'&&!(typeof rawUser==='number'&&Number.isSafeInteger(rawUser)))return null;
+    const user=String(rawUser),method=Number(data.Method??line('Events[0].Method')),record=data.RecNo??line('Events[0].RecNo'),timestamp=Number(data.UTC??data.RealUTC??line('Events[0].UTC'))*1000;
     // Method 15 is face-only. Mixed/card/PIN events cannot impersonate a face.
     if(!user||user==='0'||user.length>120||method!==15||!/^\d{1,20}$/.test(String(record))||!freshEvent(timestamp,now))return null;
     const status=data.Status??line('Events[0].Status');if(status!==undefined&&Number(status)!==1)return null;
