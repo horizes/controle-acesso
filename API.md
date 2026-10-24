@@ -44,6 +44,8 @@ POST nas rotas /v1/admin/… exige Bearer de administrador. Formulários em Leit
 
 provider: controlid/intelbras/hikvision/zkteco/dahua/generic. methods: face/plate/code. mode: online/monitor. actuatorId associa câmera à controladora do mesmo gateway e acesso. API aceita vários métodos por dispositivo; formulário inicial cadastra um.
 
+actuatorId também associa leitores faciais por evento a uma controladora independente. A API verifica condomínio/gateway/acesso; isolamento de relé e protocolo ficam na configuração privada e no aceite físico. `/v1/integrations` inclui `decisions` com ID, dispositivo, finalidade, decisão, motivo e horário; não representa confirmação de movimento do portão.
+
 Para usuários, criar/convidar a conta pelo fluxo de identidade escolhido no Supabase, confirmar e-mail e copiar o UUID de Authentication → Users. Vincular como resident (unidade obrigatória) ou desk. Não se pode mover conta de outro condomínio ou alterar o próprio vínculo nesta rota. Auth é compartilhado; ac_memberships é exclusivo deste aplicativo. Não há envio de convites/e-mail pelo painel de acesso.
 
 faceRef é referência interna, sem foto/template. Após cadastrar face no leitor, bindings associa seu ID externo à credencial. A tela Autorizações exibe o ID da credencial e permite bloqueio pelo administrador. Renovação de convite reaproveita cadastro anterior segundo as regras, com nova validade.
@@ -65,6 +67,7 @@ Caminho assinado é lógico, sem prefixo do Supabase. Nonces são persistidos e 
 | Rota POST | Campos além de requestId/sentAt | Resposta |
 | --- | --- | --- |
 | /v1/gateway/poll | Nenhum | {jobs, serverTime} |
+| /v1/gateway/status | Nenhum | {gatewayId, devices, serverTime}; somente dispositivos deste gateway |
 | /v1/gateway/ack | jobId, leaseId, status, vendorCode? | Status persistido |
 | /v1/gateway/identify | eventId, deviceId, method, identifier, purpose | allowed, reason, decisionId, expiresAt?, actuatorId? |
 

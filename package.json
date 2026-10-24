@@ -13,6 +13,7 @@
     "build:server": "node scripts/build-server.mjs",
     "build:local": "node scripts/build-local.mjs",
     "test:local": "node scripts/check-local.mjs",
+    "test:equipment": "node scripts/build-local.mjs && node scripts/check-equipment.mjs",
     "local": "node local/server.mjs",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "gateway": "node gateway/run.mjs",

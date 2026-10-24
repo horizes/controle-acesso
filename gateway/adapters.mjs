@@ -1,5 +1,6 @@
 import {spawn} from 'node:child_process';
 import {deviceUrl,secret,beforeActuation,boundedText,digestFetch} from './transport.mjs';
+import {parseDeviceXml,xmlValue} from './xml.mjs';
 export const outcome=(status,vendorCode='')=>({status,physicalState:'unknown',vendorCode});
 
 export function controlIdAction(device,reason=3){
@@ -17,7 +18,17 @@ export async function openControlId(device,command,env=process.env,transport=fet
 export async function openIntelbras(device,command,env=process.env,transport=fetch){
   if(!Number.isInteger(device.channel)||device.channel<1||device.channel>64)throw Error('INTELBRAS_CHANNEL_INVALID');const url=deviceUrl(device,'/cgi-bin/accessControl.cgi');url.searchParams.set('action','openDoor');url.searchParams.set('channel',String(device.channel));url.searchParams.set('Type','Remote');
   const credentials={username:secret(device,'usernameEnv',env),password:secret(device,'passwordEnv',env)};
-  try{const response=await digestFetch(url,{method:'GET',signal:AbortSignal.timeout(beforeActuation(command.expiresAt))},credentials,transport),raw=(await boundedText(response)).trim();if(response.ok&&raw==='OK')return outcome('accepted','INTELBRAS_OK');if(response.ok&&/^Error/i.test(raw))return outcome('rejected','VENDOR_REJECTED');return outcome('unknown','HTTP_'+response.status);}catch{return outcome('unknown','COMMAND_RESPONSE_UNCERTAIN');}
+  try{const response=await digestFetch(url,{method:'GET',signal:AbortSignal.timeout(beforeActuation(command.expiresAt))},credentials,transport),raw=(await boundedText(response)).trim();if(response.ok&&raw==='OK')return outcome('accepted',device.provider==='dahua'?'DAHUA_CGI_OK':'INTELBRAS_OK');if(response.ok&&/^Error/i.test(raw))return outcome('rejected','VENDOR_REJECTED');return outcome('unknown','HTTP_'+response.status);}catch{return outcome('unknown','COMMAND_RESPONSE_UNCERTAIN');}
+}
+export async function openHikvisionIsapi(device,command,env=process.env,transport=fetch){
+  if(!Number.isInteger(device.channel)||device.channel<1||device.channel>64)throw Error('HIKVISION_CHANNEL_INVALID');
+  const url=deviceUrl(device,'/ISAPI/AccessControl/RemoteControl/door/'+device.channel),credentials={username:secret(device,'usernameEnv',env),password:secret(device,'passwordEnv',env)};
+  const body='<?xml version="1.0" encoding="UTF-8"?><RemoteControlDoor version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema"><cmd>open</cmd></RemoteControlDoor>';
+  try{const response=await digestFetch(url,{method:'PUT',headers:{'Content-Type':'application/xml'},body,signal:AbortSignal.timeout(beforeActuation(command.expiresAt))},credentials,transport),raw=await boundedText(response);
+    if(!response.ok)return outcome(response.status===401||response.status===403?'rejected':'unknown','HTTP_'+response.status);
+    const xml=parseDeviceXml(raw);if(xml.name!=='ResponseStatus')return outcome('unknown','INVALID_RESPONSE');const code=xmlValue(xml,'statusCode');
+    return code==='1'?outcome('accepted','HIKVISION_ISAPI_OK'):code?outcome('rejected','HIKVISION_STATUS_'+code.replace(/[^0-9]/g,'').slice(0,6)):outcome('unknown','INVALID_RESPONSE');
+  }catch{return outcome('unknown','COMMAND_RESPONSE_UNCERTAIN')}
 }
 export async function openZkBio(device,command,env=process.env,transport=fetch){
   if(!device.doorId||!Number.isInteger(device.interval)||device.interval<1||device.interval>254)throw Error('ZKBIO_DOOR_NOT_CONFIGURED');const url=deviceUrl(device,'/api/door/remoteOpenById');url.searchParams.set('doorId',String(device.doorId));url.searchParams.set('interval',String(device.interval));url.searchParams.set('access_token',secret(device,'tokenEnv',env));
@@ -37,9 +48,11 @@ export async function actuate(device,command,{env=process.env,transport=fetch,ph
   if(!physicalEnabled||!device.enabled||!device.commissioned)return outcome('rejected','PHYSICAL_ACTUATION_DISABLED');if(device.id!==command.deviceId||device.gate!==command.gate||device.provider!==command.provider)return outcome('rejected','DEVICE_MAPPING_MISMATCH');
   beforeActuation(command.expiresAt);
   if(device.provider==='controlid')return openControlId(device,command,env,transport);
-  if(device.provider==='intelbras')return openIntelbras(device,command,env,transport);
+  if(device.provider==='intelbras'&&device.protocol==='http-cgi')return openIntelbras(device,command,env,transport);
+  if(device.provider==='dahua'&&device.protocol==='dahua-cgi')return openIntelbras(device,command,env,transport);
   if(device.provider==='zkteco'&&device.protocol==='zkbio-cvsecurity')return openZkBio(device,command,env,transport);
   if(device.provider==='hikvision'&&device.protocol==='hcnetsdk')return openSdkBridge(device,command,env);
+  if(device.provider==='hikvision'&&device.protocol==='hikvision-isapi')return openHikvisionIsapi(device,command,env,transport);
   if(['dahua','generic'].includes(device.provider)&&device.protocol==='licensed-bridge')return openLicensedBridge(device,command,env,transport);
   return outcome('rejected','MODEL_PROTOCOL_NOT_SUPPORTED');
 }

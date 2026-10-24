@@ -2,6 +2,8 @@
 
 > **Atualização de arquitetura:** o caminho escolhido é a [central local Windows ou Linux](./LOCAL.md), com autenticação, banco e decisões na LAN, sem internet na operação. Os procedimentos de VPS/VPN deste documento ficam como alternativa de conectividade remota; não são pré-requisito da versão local. Oracle e DigitalOcean não foram contratadas. As instruções por aparelho continuam exigindo adaptação à LAN e homologação presencial.
 
+> **Facial e placa:** consultar primeiro [COMPATIBILIDADE.md](./COMPATIBILIDADE.md) para ISAPI, CGI, montagem com leitor isolado/controladora separada e assistentes de cadastro, verificação e comissionamento. O roteiro Hikvision/HCNetSDK abaixo é a alternativa nativa; DSS continua dependendo da ponte oficial. No Control iD, faceIdentifierIds e os endpoints de disponibilidade precisam corresponder ao firmware instalado.
+
 Este guia reúne a instalação da central, VPN e os procedimentos individuais dos aparelhos. A seção **Instalação dos aparelhos** contém roteiros de VPS, roteador/switch, ligação ao portão/fechadura, Control iD, Intelbras, Hikvision, ZKTeco e Dahua, com exemplos privados, aceite e diagnóstico.
 
 ## Situação da entrega

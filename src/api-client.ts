@@ -65,7 +65,7 @@ export class CondominiumApi {
 }
 
 export type IntegrationDevice={id:string;name:string;provider:string;model:string;gate:string;gateway_id:string;enabled:boolean;commissioned:boolean;mode:string};
-export type IntegrationState={devices:IntegrationDevice[];gateways:{id:string;name:string;enabled:boolean;last_seen:string|null}[];jobs:{id:string;device_id:string;gate:string;status:string;created_at:string}[];admin:boolean;canRelease:boolean;localAccounts?:boolean;members?:{user_id:string;name:string;email:string;role:string;unit:string|null;enabled:boolean}[]};
+export type IntegrationState={devices:IntegrationDevice[];gateways:{id:string;name:string;enabled:boolean;last_seen:string|null}[];jobs:{id:string;device_id:string;gate:string;status:string;created_at:string}[];decisions?:{id:string;device_id:string;purpose:string;allowed:boolean;reason:string;created_at:string}[];admin:boolean;canRelease:boolean;localAccounts?:boolean;members?:{user_id:string;name:string;email:string;role:string;unit:string|null;enabled:boolean}[]};
 
 // Convert the existing UI actions into semantic commands. The API must repeat
 // all validation and enforce the authenticated person's role and unit.

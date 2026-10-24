@@ -1,4 +1,4 @@
-# Execute como administrador depois de testar HTTPS e conferir a pasta de instalacao.
+﻿# Execute como administrador depois de testar HTTPS e conferir a pasta de instalacao.
 $ErrorActionPreference='Stop'
 $installationRoot=Split-Path -Parent $PSScriptRoot
 $nodePath=Join-Path $installationRoot 'runtime\node.exe'

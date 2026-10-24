@@ -29,10 +29,10 @@ No ambiente online, o administrador inicial foi vinculado à conta escolhida pel
 | Fabricante | Código disponível | Etapa física pendente |
 | --- | --- | --- |
 | Control iD | Login, ação remota e autorização preventiva por callback Pro | Modelo, firmware, portal, rede e contingência |
-| Intelbras | Digest/CGI de abertura, stream multipart e ANPR TrafficJunction | Confirmar contratos e campos no modelo |
-| Hikvision | Helper C++ HCNetSDK para ControlGateway | Obter SDK oficial, compilar e homologar |
+| Intelbras | Digest/CGI, ANPR e face Method 15 com controladora separada | Confirmar contratos, metadados e isolamento no modelo |
+| Hikvision | ISAPI Digest, eventos faciais/ANPR e alternativa HCNetSDK | Confirmar capacidades e montagem; SDK no caminho alternativo |
 | ZKTeco | Abertura via ZKBio CVSecurity com API licenciada | Servidor, licença, token e porta |
-| Dahua | Contrato para ponte licenciada DSS | Implementar ponte com pacote oficial aprovado |
+| Dahua | CGI condicional ao modelo e contrato para ponte DSS | Confirmar CGI; implementar ponte DSS quando necessária |
 
 Não representa compatibilidade universal com todos os produtos das marcas. Face é associação do ID identificado pelo leitor a uma credencial; o site não executa reconhecimento facial nem cadastra biometria no equipamento. ANPR implementado: modelos Intelbras com eventos documentados.
 
@@ -42,6 +42,7 @@ Aceite pelo equipamento não confirma posição física do portão. Não há sen
 
 - [Guia de implantação e passo a passo de cada aparelho](./IMPLANTACAO.md)
 - [Instalação local para Windows e servidor Linux](./LOCAL.md)
+- [Compatibilidade facial/placa e assistentes de equipamentos](./COMPATIBILIDADE.md)
 - [Preparação da VPS Imperium e proposta de hospedagem](./gateway/cloud/README.md)
 - [Oracle Cloud gratuita — instalação e limites](./gateway/cloud/ORACLE.md)
 - [Perfis de configuração, inventário e fichas de aceite](./gateway/installation/)
@@ -64,6 +65,7 @@ npm run build
 npm run build:server
 npm run build:local
 npm run test:local
+npm run test:equipment
 ```
 
 No Windows com restrição a fs.realpathSync.native, executar scripts com node --import ./scripts/windows-fs-compat.mjs. Os testes de integração usam equipamentos e autenticação simulados. scripts/check-database.sql valida os RPCs no banco dentro de transação revertida.

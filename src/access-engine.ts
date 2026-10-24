@@ -23,8 +23,8 @@ export function evaluateAccess(credentials:Credential[],signal:AccessSignal,cloc
 export const integrationProfiles=[
  {name:'Control iD',protocol:'API de acesso · modo online / Monitor',description:'Consulta preventiva no modo online compatível. Monitor é usado para auditoria; a ação de porta varia por família.',state:'Homologar modelo'},
  {name:'Intelbras',protocol:'HTTP Digest · CGI / SDK por modelo',description:'Portas e eventos AccessControl. Leitura de placas TrafficJunction depende das capacidades do equipamento.',state:'Homologar modelo'},
- {name:'Hikvision',protocol:'HCNetSDK · ponte nativa',description:'Eventos de acesso e câmeras ANPR. Comandos de porta e capacidades devem seguir o guia do modelo.',state:'Requer SDK e homologação'},
- {name:'Dahua',protocol:'DSS · DEPP / SDK',description:'Integração pela plataforma DSS, com pacote oficial, aprovação e licença de API do fabricante.',state:'Requer API licenciada'},
+ {name:'Hikvision',protocol:'ISAPI Digest · HCNetSDK opcional',description:'Eventos faciais e ANPR por ISAPI, com controle de porta nas versões compatíveis. Leitor de eventos exige controladora separada e relé isolado.',state:'Homologar modelo e firmware'},
+ {name:'Dahua',protocol:'CGI Digest · DSS / SDK por linha',description:'CGI nas versões que documentam AccessControl e TrafficJunction. DSS e outras linhas exigem ponte e pacote oficial.',state:'Confirmar contrato do modelo'},
  {name:'ZKTeco',protocol:'ZKBio CVSecurity 6+ / SDK por linha',description:'API licenciada do servidor CVSecurity. Outras famílias utilizam ponte com o SDK ou protocolo próprio.',state:'Requer servidor compatível'},
- {name:'Outros fabricantes',protocol:'Evento HTTP normalizado',description:'Entrada comum para eventos enviados por um conector do equipamento.',state:'Contrato definido'},
+ {name:'Outros fabricantes',protocol:'Evento HTTP com assinatura HMAC',description:'Conector SDK homologado envia identificações assinadas; a central confere autorização e prazo.',state:'Requer produtor compatível'},
 ];

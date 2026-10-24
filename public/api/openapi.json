@@ -1086,6 +1086,59 @@
         },
         "x-local-only": true
       }
+    },
+    "/v1/gateway/status": {
+      "post": {
+        "summary": "Estado e vínculos somente do gateway autenticado; não envia comandos",
+        "security": [
+          {
+            "gatewayToken": [],
+            "gatewayHmac": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "sentAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "requestId",
+                  "sentAt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso; ver API.md para campos e restrições"
+          },
+          "400": {
+            "description": "Corpo inválido"
+          },
+          "401": {
+            "description": "Autenticação inválida"
+          },
+          "403": {
+            "description": "Sem permissão"
+          },
+          "409": {
+            "description": "Conflito/repetição ou equipamento indisponível"
+          }
+        }
+      }
     }
   },
   "components": {

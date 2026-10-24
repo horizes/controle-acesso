@@ -17,3 +17,7 @@ ACE-10;PREENCHER;Reinicio_gateway;Recibos_preservados_sem_repeticao;;;;;PENDENTE
 ACE-11;PREENCHER;Renovacao_explicita_de_convite_e_vinculo_facial;Identidade_unidade_ID_e_vinculo_preservados;;;;;PENDENTE
 ACE-12;PREENCHER;Homonomos_em_unidades_diferentes;Sem_substituir_credencial_ou_herdar_face_por_nome;;;;;PENDENTE
 ACE-13;PREENCHER;WAN_desconectada_com_LAN_e_servidor_local_ativos;Login_cadastro_e_autorizacao_local_continuam_sem_nuvem;;;;;PENDENTE
+ACE-14;PREENCHER;Leitor_de_eventos_com_rele_isolado;Leitor_nao_aciona_portao_sem_decisao_Imperium;;;;;PENDENTE
+ACE-15;PREENCHER;Cartao_PIN_ou_evento_de_ponto;Nao_assume_vinculo_facial;;;;;PENDENTE
+ACE-16;PREENCHER;Duas_fontes_no_mesmo_acesso;Janela_persistente_impede_pulsos_simultaneos;;;;;PENDENTE
+ACE-17;PREENCHER;CGI_ISAPI_ou_SDK_divergente;Sem_aceite_automatico_por_nome_da_marca;;;;;PENDENTE

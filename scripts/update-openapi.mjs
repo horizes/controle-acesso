@@ -23,6 +23,7 @@ add('/v1/admin/local-accounts','Somente local e administrador: criar usuário',o
 add('/v1/admin/local-account-status','Somente local e administrador: habilitar ou desabilitar usuário',object({userId:uuid,enabled:bool}));
 for(const path of ['/v1/admin/local-accounts','/v1/admin/local-account-status'])api.paths[path].post['x-local-only']=true;
 const base={requestId:uuid,sentAt:iso},security=[{gatewayToken:[],gatewayHmac:[]}];
+add('/v1/gateway/status','Estado e vínculos somente do gateway autenticado; não envia comandos',object(base),security);
 add('/v1/gateway/poll','Heartbeat e lease; nunca reenvia lease em timeout',object(base),security);
 add('/v1/gateway/ack','Confirma resultado sem afirmar posição física',object({...base,jobId:uuid,leaseId:uuid,status:{enum:['accepted','rejected','unknown']},vendorCode:string},['requestId','sentAt','jobId','leaseId','status']),security);
 add('/v1/gateway/identify','Valida identificação com prazo; observação nunca autoriza',object({...base,eventId:string,deviceId:string,method:{enum:['face','plate','code']},identifier:string,purpose:{enum:['authorization-request','observation']}}),security);

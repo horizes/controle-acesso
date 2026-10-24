@@ -108,12 +108,18 @@ Usar os procedimentos por fabricante em `IMPLANTACAO.md` e os perfis em `gateway
 3. Na API local, cadastrar o dispositivo, seu protocolo, acesso e forma de identificação. Ele nasce desativado e não homologado. O gateway inicial já foi criado; seu token não é mostrado no painel e fica apenas no diretório privado.
 4. Para Control iD Pro, cadastrar a face no leitor e associar seu ID à credencial local em **Vínculo facial**. Configurar callbacks para o IP da central na LAN. Ao habilitar `callbackListen`, escutar no endereço privado, porta 8765, e permitir no firewall apenas os IPs dos leitores autorizados. Não abrir essa porta para todos os moradores nem para a internet.
 5. Para leitura de placa Intelbras compatível, usar a controladora vinculada, eventos documentados e desativar a abertura nativa automática no teste preventivo. Homologar o evento, horário, placa e vínculo com o acesso. A câmera identifica a placa; a central local confere validade e permissão.
-6. Hikvision exige helper/SDK compatível; ZKTeco exige servidor/API licenciados na própria rede; Dahua ainda depende da implementação da ponte licenciada. Instalação local não elimina licenças nem torna todas as marcas/modelos compatíveis.
+6. Hikvision tem caminho direto ISAPI nas versões compatíveis e alternativa HCNetSDK; ZKTeco exige servidor/API licenciados na própria rede; Dahua tem caminho CGI condicionado ao modelo e alternativa DSS cuja ponte nativa ainda depende de implementação. Instalação local não elimina licenças nem torna todas as marcas/modelos compatíveis.
 7. Depois do teste presencial, habilitar separadamente na API o gateway/dispositivo homologado e, na configuração privada, o dispositivo e `physicalEnabled:true`, com `IMPERIUM_ENABLE_PHYSICAL:"yes"`. Antes disso, permanece sem acionamento físico.
 
 O termo “online” em protocolos de fabricante significa consultar a central local; não exige internet. Entretanto, o leitor/controladora deve ter suporte ao modo consultado no modelo/firmware real. O software não reconhece rostos em fotos pelo navegador nem cadastra biometria no aparelho automaticamente.
 
 Renovações selecionam o **cadastro anterior por identificador e unidade**, preservando o vínculo facial. Digitar um nome igual não herda biometria. Chegadas avulsas autorizadas pela portaria recebem uma autorização própria; não vinculam uma face só por coincidência de nome.
+
+### Assistentes de equipamentos
+
+O pacote inclui `local\Cadastrar-Equipamento.cmd`, `local\Verificar-Equipamentos.cmd` e `local\Comissionar-Equipamento.cmd`. O cadastro pede login de administrador, prepara o registro na API e a configuração privada desativada. Cadastrar a controladora antes do leitor/câmera quando a montagem for separada. A verificação lê capacidades e autenticação, sem abertura. O comissionamento só é utilizado pelo responsável após o ensaio físico; não testa um portão sozinho.
+
+Os mesmos programas `.mjs` funcionam com Node 24 no servidor Linux. O [guia de compatibilidade](./COMPATIBILIDADE.md) descreve os perfis, os campos de identificação e os limites. No Control iD, informar faceIdentifierIds com o mecanismo facial confirmado. Em facial Intelbras/Hikvision/Dahua por eventos, o relé do leitor fica isolado e a atuação ocorre por controladora independente; deixar o perfil em auditoria até comprovar essa montagem.
 
 ## 7. Testar sem internet antes do aceite
 
